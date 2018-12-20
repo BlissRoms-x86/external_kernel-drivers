@@ -11212,4 +11212,3 @@ void rtw_dump_phy_cap(void *sel, _adapter *adapter)
 	rtw_dump_phy_cap_by_hal(sel, adapter);
 #endif
 }
-

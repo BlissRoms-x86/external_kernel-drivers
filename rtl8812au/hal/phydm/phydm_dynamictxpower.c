@@ -137,6 +137,8 @@ odm_dynamic_tx_power_nic_ce(
 	u8			val;
 	u8			rssi_tmp = p_dm_odm->rssi_min;
 
+	if (!(p_dm_odm->support_ic_type & (ODM_RTL8821)))
+		return;
 	if (!(p_dm_odm->support_ability & ODM_BB_DYNAMIC_TXPWR))
 		return;
 

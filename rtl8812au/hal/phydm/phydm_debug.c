@@ -2782,9 +2782,10 @@ phydm_cmd_parser(
 		if (input_idx >= 1) {
 
 #if (RTL8821A_SUPPORT == 1)
-			phydm_set_ext_switch(p_dm_odm, (u32 *)var1, &used, output, &out_len);
-#else
-			PHYDM_SNPRINTF((output + used, out_len - used, "Not Support IC"));
+			if (p_dm_odm->support_ic_type == ODM_RTL8821)
+				phydm_set_ext_switch(p_dm_odm, (u32 *)var1, &used, output, &out_len);
+			else
+				PHYDM_SNPRINTF((output + used, out_len - used, "Not Support IC"));
 #endif
 		}
 

@@ -14501,4 +14501,3 @@ u32 array_length_mp_8812a_fw_wowlan = 29956;
 #endif /* end of LOAD_FW_HEADER_FROM_DRIVER*/
 
 #endif /* end of HWIMG_SUPPORT*/
-

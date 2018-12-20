@@ -977,7 +977,8 @@ s32 mp_start_test(PADAPTER padapter)
 	rtl8821c_phy_init_haldm(padapter);
 #endif /* CONFIG_RTL8821C */
 #ifdef CONFIG_RTL8812A
-	rtl8812_InitHalDm(padapter);
+	if (IS_HARDWARE_TYPE_8812(padapter))
+		rtl8812_InitHalDm(padapter);
 #endif /* CONFIG_RTL8812A */
 #ifdef CONFIG_RTL8723B
 	rtl8723b_InitHalDm(padapter);
@@ -1070,7 +1071,8 @@ end_of_mp_stop_test:
 		_exit_critical_bh(&pmlmepriv->lock, &irqL);
 
 #ifdef CONFIG_RTL8812A
-		rtl8812_InitHalDm(padapter);
+		if (IS_HARDWARE_TYPE_8812(padapter))
+			rtl8812_InitHalDm(padapter);
 #endif
 #ifdef CONFIG_RTL8723B
 		rtl8723b_InitHalDm(padapter);

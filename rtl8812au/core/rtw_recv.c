@@ -4297,4 +4297,3 @@ exit:
 	thread_exit();
 }
 #endif /* CONFIG_RECV_THREAD_MODE */
-

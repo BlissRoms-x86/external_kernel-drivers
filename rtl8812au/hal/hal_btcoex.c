@@ -1891,7 +1891,8 @@ u32 halbtcoutsrc_GetPhydmVersion(void *pBtcContext)
 #endif
 
 #ifdef CONFIG_RTL8821A
-	return RELEASE_VERSION_8821A;
+	if (IS_HARDWARE_TYPE_8821(Adapter))
+		return RELEASE_VERSION_8821A;
 #endif
 
 #ifdef CONFIG_RTL8723B
