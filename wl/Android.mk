@@ -10,6 +10,7 @@
 
 LOCAL_PATH := $(my-dir)
 LOCAL_MODULE := $(notdir $(LOCAL_PATH))
+LOCAL_VENDOR_MODULE := true
 EXTRA_KERNEL_MODULE_PATH_$(LOCAL_MODULE) := $(LOCAL_PATH)
 
 # parts of build/tasks/kernel.mk
