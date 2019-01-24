@@ -20,9 +20,6 @@
 #ifndef __OSDEP_SERVICE_H_
 #define __OSDEP_SERVICE_H_
 
-#include <linux/signal.h>
-#include <linux/sched/signal.h>
-
 #define _FAIL		0
 #define _SUCCESS	1
 #define RTW_RX_HANDLED 2
@@ -33,9 +30,6 @@
 
 #undef _FALSE
 #define _FALSE		0
-
-#include <linux/signal.h>
-#include <linux/sched/signal.h>
 
 #ifdef PLATFORM_FREEBSD
 #include <osdep_service_bsd.h>
