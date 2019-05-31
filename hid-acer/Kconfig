@@ -1,0 +1,4 @@
+config HID_ACER
+    tristate "Acer HID quirks"
+    ---help---
+      Help message of Synaptics
