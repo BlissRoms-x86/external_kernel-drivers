@@ -30,7 +30,7 @@ WL_PATCHES := \
 
 $(WL_SRC):
 	@echo Downloading $(@F)...
-	$(hide) mkdir -p $(@D) && curl -k https://docs.broadcom.com/docs-and-downloads/docs/linux_sta/$(@F) > $@
+	$(hide) mkdir -p $(@D) && /usr/bin/curl -k https://docs.broadcom.com/docs-and-downloads/docs/linux_sta/$(@F) > $@
 
 $(WL_LIB): $(WL_SRC) $(addprefix $(LOCAL_PATH)/,$(WL_PATCHES))
 	$(hide) tar zxf $< -C $(@D) --overwrite -m && \
