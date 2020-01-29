@@ -21,12 +21,14 @@ WL_LIB := $(WL_PATH)/lib$(if $(filter x86,$(TARGET_KERNEL_ARCH)),32,64)
 
 WL_PATCHES := \
 	wl.patch \
-	linux-recent.patch \
-	linux-48.patch \
-	linux-411.patch \
-	linux-412.patch \
-	linux-415.patch \
-	linux-510.patch \
+	002-rdtscl.patch \
+	003-linux47.patch \
+	004-linux48.patch \
+	005-debian-fix-kernel-warnings.patch \
+	006-linux411.patch \
+	007-linux412.patch \
+	008-linux415.patch \
+	009-fix_mac_profile_discrepancy.patch \
 
 $(WL_SRC):
 	@echo Downloading $(@F)...
