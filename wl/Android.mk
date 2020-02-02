@@ -30,6 +30,7 @@ WL_PATCHES := \
 	008-linux415.patch \
 	009-fix_mac_profile_discrepancy.patch \
 	010-linux510.patch \
+	011-linux560.patch \
 
 $(WL_SRC):
 	@echo Downloading $(@F)...
