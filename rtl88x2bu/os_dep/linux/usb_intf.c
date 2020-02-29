@@ -139,7 +139,6 @@ static void rtw_dev_shutdown(struct device *dev)
 #endif
 
 
-#define USB_VENDER_ID_EDIMAX		0x7392  //EDX
 #define USB_VENDER_ID_REALTEK		0x0BDA
 
 
@@ -235,8 +234,6 @@ static struct usb_device_id rtw_usb_id_tbl[] = {
 	/*=== Realtek demoboard ===*/
 	{USB_DEVICE_AND_INTERFACE_INFO(USB_VENDER_ID_REALTEK, 0xB82C, 0xff, 0xff, 0xff), .driver_info = RTL8822B}, /* Default ID for USB multi-function */
 	{USB_DEVICE_AND_INTERFACE_INFO(USB_VENDER_ID_REALTEK, 0xB812, 0xff, 0xff, 0xff), .driver_info = RTL8822B}, /* Default ID for USB Single-function, WiFi only */
-	{USB_DEVICE_AND_INTERFACE_INFO(USB_VENDER_ID_EDIMAX, 0xB822, 0xff, 0xff, 0xff), .driver_info = RTL8822B}, //EDX
-	{USB_DEVICE_AND_INTERFACE_INFO(USB_VENDER_ID_EDIMAX, 0xC822, 0xff, 0xff, 0xff), .driver_info = RTL8822B}, //EDX
 	/*=== Customer ID ===*/
 	{USB_DEVICE_AND_INTERFACE_INFO(0x13b1, 0x0043, 0xff, 0xff, 0xff), .driver_info = RTL8822B}, /* Alpha - Alpha*/
 #endif /* CONFIG_RTL8822B */
