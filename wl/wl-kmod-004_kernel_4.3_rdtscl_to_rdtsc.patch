@@ -1,0 +1,15 @@
+diff -Naur a/src/shared/linux_osl.c b/src/shared/linux_osl.c
+--- a/src/shared/linux_osl.c	2015-09-19 00:47:30.000000000 +0200
++++ b/src/shared/linux_osl.c	2015-12-21 10:01:33.892793431 +0100
+@@ -932,7 +932,11 @@
+ 	uint cycles;
+ 
+ #if defined(__i386__)
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 3, 0)
++	cycles = (u32) rdtsc();
++#else
+ 	rdtscl(cycles);
++#endif
+ #else
+ 	cycles = 0;
+ #endif 

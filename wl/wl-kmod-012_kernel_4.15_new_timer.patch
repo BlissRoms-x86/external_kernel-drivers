@@ -1,5 +1,6 @@
---- a/src/wl/sys/wl_linux.c	2017-07-17 00:11:24.000000000 +0100
-+++ b/src/wl/sys/wl_linux.c	2018-01-27 09:49:47.057799596 +0000
+diff -Naur a/src/wl/sys/wl_linux.c b/src/wl/sys/wl_linux.c
+--- a/src/wl/sys/wl_linux.c	2017-06-03 15:26:57.094475000 +0200
++++ b/src/wl/sys/wl_linux.c	2018-02-15 00:54:30.184690464 +0100
 @@ -93,7 +93,11 @@
  
  #include <wlc_wowl.h>
@@ -12,7 +13,7 @@
  static void _wl_timer(wl_timer_t *t);
  static struct net_device *wl_alloc_linux_if(wl_if_t *wlif);
  
-@@ -2297,10 +2301,17 @@
+@@ -2311,10 +2315,17 @@
  	atomic_dec(&t->wl->callbacks);
  }
  
@@ -30,7 +31,7 @@
  
  	if (!WL_ALL_PASSIVE_ENAB(t->wl))
  		_wl_timer(t);
-@@ -2352,9 +2363,13 @@
+@@ -2366,9 +2377,13 @@
  
  	bzero(t, sizeof(wl_timer_t));
  

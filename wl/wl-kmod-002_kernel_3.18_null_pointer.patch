@@ -1,0 +1,17 @@
+diff -Naur a/src/wl/sys/wl_linux.c b/src/wl/sys/wl_linux.c
+--- a/src/wl/sys/wl_linux.c	2015-09-19 00:47:30.000000000 +0200
++++ b/src/wl/sys/wl_linux.c	2015-10-17 18:26:48.174207806 +0200
+@@ -2165,8 +2165,13 @@
+ 	wlif = WL_DEV_IF(dev);
+ 	wl = WL_INFO(dev);
+ 
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(3, 18, 0)
++	skb->prev = NULL;
++#endif
+ 	if (WL_ALL_PASSIVE_ENAB(wl) || (WL_RTR() && WL_CONFIG_SMP())) {
++#if LINUX_VERSION_CODE < KERNEL_VERSION(3, 18, 0)
+ 		skb->prev = NULL;
++#endif
+ 
+ 		TXQ_LOCK(wl);
+ 
