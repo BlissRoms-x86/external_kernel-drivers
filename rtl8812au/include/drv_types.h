@@ -38,17 +38,7 @@
 	#include <net/arp.h>
 #endif
 
-#ifdef PLATFORM_OS_XP
-	#include <drv_types_xp.h>
-#endif
-
-#ifdef PLATFORM_OS_CE
-	#include <drv_types_ce.h>
-#endif
-
-#ifdef PLATFORM_LINUX
-	#include <drv_types_linux.h>
-#endif
+#include <drv_types_linux.h>
 
 enum _NIC_VERSION {
 
@@ -102,7 +92,6 @@ typedef struct _ADAPTER _adapter, ADAPTER, *PADAPTER;
 #include <rtw_io.h>
 #include <rtw_ioctl.h>
 #include <rtw_ioctl_set.h>
-#include <rtw_ioctl_query.h>
 #include <rtw_ioctl_rtl.h>
 #include <osdep_intf.h>
 #include <rtw_eeprom.h>
@@ -957,8 +946,6 @@ struct dvobj_priv {
 
 	/*-------- below is for USB INTERFACE --------*/
 
-#ifdef CONFIG_USB_HCI
-
 	u8	usb_speed; /* 1.1, 2.0 or 3.0 */
 	u8	nr_endpoint;
 	u8	RtNumInPipes;
@@ -978,92 +965,8 @@ struct dvobj_priv {
 	u8 *usb_vendor_req_buf;
 #endif
 
-#ifdef PLATFORM_WINDOWS
-	/* related device objects */
-	PDEVICE_OBJECT	pphysdevobj;/* pPhysDevObj; */
-	PDEVICE_OBJECT	pfuncdevobj;/* pFuncDevObj; */
-	PDEVICE_OBJECT	pnextdevobj;/* pNextDevObj; */
-
-	u8	nextdevstacksz;/* unsigned char NextDeviceStackSize;	 */ /* = (CHAR)CEdevice->pUsbDevObj->StackSize + 1; */
-
-	/* urb for control diescriptor request */
-
-#ifdef PLATFORM_OS_XP
-	struct _URB_CONTROL_DESCRIPTOR_REQUEST descriptor_urb;
-	PUSB_CONFIGURATION_DESCRIPTOR	pconfig_descriptor;/* UsbConfigurationDescriptor; */
-#endif
-
-#ifdef PLATFORM_OS_CE
-	WCHAR			active_path[MAX_ACTIVE_REG_PATH];	/* adapter regpath */
-	USB_EXTENSION	usb_extension;
-
-	_nic_hdl		pipehdls_r8192c[0x10];
-#endif
-
-	u32	config_descriptor_len;/* ULONG UsbConfigurationDescriptorLength; */
-#endif/* PLATFORM_WINDOWS */
-
-#ifdef PLATFORM_LINUX
 	struct usb_interface *pusbintf;
 	struct usb_device *pusbdev;
-#endif/* PLATFORM_LINUX */
-
-#ifdef PLATFORM_FREEBSD
-	struct usb_interface *pusbintf;
-	struct usb_device *pusbdev;
-#endif/* PLATFORM_FREEBSD */
-
-#endif/* CONFIG_USB_HCI */
-
-	/*-------- below is for PCIE INTERFACE --------*/
-
-#ifdef CONFIG_PCI_HCI
-
-#ifdef PLATFORM_LINUX
-	struct pci_dev *ppcidev;
-
-	/* PCI MEM map */
-	unsigned long	pci_mem_end;	/* shared mem end	*/
-	unsigned long	pci_mem_start;	/* shared mem start	*/
-
-	/* PCI IO map */
-	unsigned long	pci_base_addr;	/* device I/O address	*/
-
-#ifdef RTK_129X_PLATFORM
-	unsigned long	ctrl_start;
-	/* PCI MASK addr */
-	unsigned long	mask_addr;
-
-	/* PCI TRANSLATE addr */
-	unsigned long	tran_addr;
-
-	_lock   io_reg_lock;
-#endif
-
-	/* PciBridge */
-	struct pci_priv	pcipriv;
-
-	unsigned int irq; /* get from pci_dev.irq, store to net_device.irq */
-	u16	irqline;
-	u8	irq_enabled;
-	RT_ISR_CONTENT	isr_content;
-	_lock	irq_th_lock;
-
-	/* ASPM */
-	u8	const_pci_aspm;
-	u8	const_amdpci_aspm;
-	u8	const_hwsw_rfoff_d3;
-	u8	const_support_pciaspm;
-	/* pci-e bridge */
-	u8	const_hostpci_aspm_setting;
-	/* pci-e device */
-	u8	const_devicepci_aspm_setting;
-	u8	b_support_aspm; /* If it supports ASPM, Offset[560h] = 0x40, otherwise Offset[560h] = 0x00. */
-	u8	b_support_backdoor;
-	u8	bdma64;
-#endif/* PLATFORM_LINUX */
-
-#endif/* CONFIG_PCI_HCI */
 
 #ifdef CONFIG_MCC_MODE
 	struct mcc_obj_priv mcc_objpriv;
@@ -1114,27 +1017,12 @@ static inline void dev_clr_drv_stopped(struct dvobj_priv *dvobj)
 #define dev_is_surprise_removed(dvobj)	(ATOMIC_READ(&dvobj->bSurpriseRemoved) == _TRUE)
 #define dev_is_drv_stopped(dvobj)		(ATOMIC_READ(&dvobj->bDriverStopped) == _TRUE)
 
-#ifdef PLATFORM_LINUX
 static struct device *dvobj_to_dev(struct dvobj_priv *dvobj)
 {
 	/* todo: get interface type from dvobj and the return the dev accordingly */
-#ifdef RTW_DVOBJ_CHIP_HW_TYPE
-#endif
 
-#ifdef CONFIG_USB_HCI
 	return &dvobj->pusbintf->dev;
-#endif
-#ifdef CONFIG_SDIO_HCI
-	return &dvobj->intf_data.func->dev;
-#endif
-#ifdef CONFIG_GSPI_HCI
-	return &dvobj->intf_data.func->dev;
-#endif
-#ifdef CONFIG_PCI_HCI
-	return &dvobj->ppcidev->dev;
-#endif
 }
-#endif
 
 _adapter *dvobj_get_port0_adapter(struct dvobj_priv *dvobj);
 _adapter *dvobj_get_unregisterd_adapter(struct dvobj_priv *dvobj);
@@ -1302,11 +1190,6 @@ struct _ADAPTER {
 	_thread_hdl_ recvThread;
 
 	u8 registered;
-#ifndef PLATFORM_LINUX
-	NDIS_STATUS(*dvobj_init)(struct dvobj_priv *dvobj);
-	void (*dvobj_deinit)(struct dvobj_priv *dvobj);
-#endif
-
 	u32(*intf_init)(struct dvobj_priv *dvobj);
 	void (*intf_deinit)(struct dvobj_priv *dvobj);
 	int (*intf_alloc_irq)(struct dvobj_priv *dvobj);
@@ -1316,18 +1199,6 @@ struct _ADAPTER {
 	void (*intf_start)(_adapter *adapter);
 	void (*intf_stop)(_adapter *adapter);
 
-#ifdef PLATFORM_WINDOWS
-	_nic_hdl		hndis_adapter;/* hNdisAdapter(NDISMiniportAdapterHandle); */
-	_nic_hdl		hndis_config;/* hNdisConfiguration; */
-	NDIS_STRING fw_img;
-
-	u32	NdisPacketFilter;
-	u8	MCList[MAX_MCAST_LIST_NUM][6];
-	u32	MCAddrCount;
-#endif /* end of PLATFORM_WINDOWS */
-
-
-#ifdef PLATFORM_LINUX
 	_nic_hdl pnetdev;
 	char old_ifname[IFNAMSIZ];
 
@@ -1360,13 +1231,6 @@ struct _ADAPTER {
 
 #endif /* CONFIG_IOCTL_CFG80211 */
 
-#endif /* PLATFORM_LINUX */
-
-#ifdef PLATFORM_FREEBSD
-	_nic_hdl pifp;
-	int bup;
-	_lock glock;
-#endif /* PLATFORM_FREEBSD */
 	u8 mac_addr[ETH_ALEN];
 	int net_closed;
 

@@ -802,12 +802,6 @@ struct mlme_priv {
 	u32 wfd_assoc_resp_ie_len;
 #endif
 
-#ifdef RTK_DMP_PLATFORM
-	/* DMP kobject_hotplug function  signal need in passive level */
-	_workitem	Linkup_workitem;
-	_workitem	Linkdown_workitem;
-#endif
-
 #ifdef CONFIG_INTEL_WIDI
 	int	widi_state;
 	int	listen_state;

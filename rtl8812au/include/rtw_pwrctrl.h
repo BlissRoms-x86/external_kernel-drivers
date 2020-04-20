@@ -46,13 +46,8 @@
 
 #ifdef CONFIG_WOWLAN
 #ifdef CONFIG_DEFAULT_PATTERNS_EN
-	#ifdef CONFIG_PLATFORM_ANDROID_INTEL_X86
-		/* TCP/ICMP/UDP multicast with specific IP addr */
-		#define DEFAULT_PATTERN_NUM 3
-	#else
-		/* TCP/ICMP */
-		#define DEFAULT_PATTERN_NUM 2
-	#endif
+	/* TCP/ICMP */
+	#define DEFAULT_PATTERN_NUM 2
 #else
 	#define DEFAULT_PATTERN_NUM 0
 #endif /*CONFIG_DEFAULT_PATTERNS_EN*/

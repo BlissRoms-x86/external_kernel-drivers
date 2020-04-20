@@ -48,7 +48,6 @@
 #define PMKID_LEN 16
 
 
-#ifdef PLATFORM_LINUX
 struct wpa_ie_hdr {
 	u8 elem_id;
 	u8 len;
@@ -101,29 +100,6 @@ struct wme_parameter_element {
 	struct wme_ac_parameter ac[4];
 
 } __attribute__((packed));
-
-#endif
-
-#ifdef PLATFORM_WINDOWS
-
-#pragma pack(1)
-
-struct wpa_ie_hdr {
-	u8 elem_id;
-	u8 len;
-	u8 oui[4]; /* 24-bit OUI followed by 8-bit OUI type */
-	u8 version[2]; /* little endian */
-};
-
-struct rsn_ie_hdr {
-	u8 elem_id; /* WLAN_EID_RSN */
-	u8 len;
-	u8 version[2]; /* little endian */
-};
-
-#pragma pack()
-
-#endif
 
 #define WPA_PUT_LE16(a, val)			\
 	do {					\
@@ -198,8 +174,6 @@ enum ieee80211_back_parties {
 	WLAN_BACK_INITIATOR = 1,
 	WLAN_BACK_TIMER = 2,
 };
-
-#ifdef PLATFORM_LINUX
 
 struct ieee80211_mgmt {
 	__le16 frame_control;
@@ -312,111 +286,7 @@ struct ieee80211_mgmt {
 	} __attribute__((packed)) u;
 } __attribute__((packed));
 
-#endif
-
-
-#ifdef PLATFORM_WINDOWS
-
-#pragma pack(1)
-
-struct ieee80211_mgmt {
-	__le16 frame_control;
-	__le16 duration;
-	u8 da[6];
-	u8 sa[6];
-	u8 bssid[6];
-	__le16 seq_ctrl;
-	union {
-		struct {
-			__le16 auth_alg;
-			__le16 auth_transaction;
-			__le16 status_code;
-			/* possibly followed by Challenge text */
-			u8 variable[0];
-		}  auth;
-		struct {
-			__le16 reason_code;
-		}  deauth;
-		struct {
-			__le16 capab_info;
-			__le16 listen_interval;
-			/* followed by SSID and Supported rates */
-			u8 variable[0];
-		}  assoc_req;
-		struct {
-			__le16 capab_info;
-			__le16 status_code;
-			__le16 aid;
-			/* followed by Supported rates */
-			u8 variable[0];
-		}  assoc_resp, reassoc_resp;
-		struct {
-			__le16 capab_info;
-			__le16 listen_interval;
-			u8 current_ap[6];
-			/* followed by SSID and Supported rates */
-			u8 variable[0];
-		}  reassoc_req;
-		struct {
-			__le16 reason_code;
-		}  disassoc;
-		struct {
-			u8 category;
-			union {
-				struct {
-					u8 action_code;
-					u8 dialog_token;
-					u8 status_code;
-					u8 variable[0];
-				}  wme_action;
-				struct {
-					u8 action_code;
-					u8 dialog_token;
-					__le16 capab;
-					__le16 timeout;
-					__le16 start_seq_num;
-				}  addba_req;
-				struct {
-					u8 action_code;
-					u8 dialog_token;
-					__le16 status;
-					__le16 capab;
-					__leu16 timeout;
-				}  addba_resp;
-				struct {
-					u8 action_code;
-					__le16 params;
-					__le16 reason_code;
-				}  delba;
-				struct {
-					u8 action_code;
-					/* capab_info for open and confirm,
-					 * reason for close
-					 */
-					__le16 aux;
-					/* Followed in plink_confirm by status
-					 * code, AID and supported rates,
-					 * and directly by supported rates in
-					 * plink_open and plink_close
-					 */
-					u8 variable[0];
-				}  plink_action;
-				struct {
-					u8 action_code;
-					u8 variable[0];
-				}  mesh_action;
-			} u;
-		}  action;
-	} u;
-} ;
-
-#pragma pack()
-
-#endif
-
 /* mgmt header + 1 byte category code */
 #define IEEE80211_MIN_ACTION_SIZE FIELD_OFFSET(struct ieee80211_mgmt, u.action.u)
-
-
 
 #endif

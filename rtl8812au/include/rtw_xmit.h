@@ -40,13 +40,7 @@
 #elif defined (CONFIG_USB_HCI)
 
 	#ifdef CONFIG_USB_TX_AGGREGATION
-		#if defined(CONFIG_PLATFORM_ARM_SUNxI) || defined(CONFIG_PLATFORM_ARM_SUN6I) || defined(CONFIG_PLATFORM_ARM_SUN7I) || defined(CONFIG_PLATFORM_ARM_SUN8I) || defined(CONFIG_PLATFORM_ARM_SUN50IW1P1)
-			#define MAX_XMITBUF_SZ (12288)  /* 12k 1536*8 */
-		#elif defined (CONFIG_PLATFORM_MSTAR)
-			#define MAX_XMITBUF_SZ	7680	/* 7.5k */
-		#else
-			#define MAX_XMITBUF_SZ	(20480)	/* 20k */
-		#endif
+		#define MAX_XMITBUF_SZ	(20480)	/* 20k */
 	#else
 		#define MAX_XMITBUF_SZ	(2048)
 	#endif
@@ -65,18 +59,10 @@
 	#define NR_XMITBUFF	(128)
 #endif
 
-#ifdef PLATFORM_OS_CE
-	#define XMITBUF_ALIGN_SZ 4
+#ifdef USB_XMITBUF_ALIGN_SZ
+	#define XMITBUF_ALIGN_SZ (USB_XMITBUF_ALIGN_SZ)
 #else
-	#ifdef CONFIG_PCI_HCI
-		#define XMITBUF_ALIGN_SZ 4
-	#else
-		#ifdef USB_XMITBUF_ALIGN_SZ
-			#define XMITBUF_ALIGN_SZ (USB_XMITBUF_ALIGN_SZ)
-		#else
-			#define XMITBUF_ALIGN_SZ 512
-		#endif
-	#endif
+	#define XMITBUF_ALIGN_SZ 512
 #endif
 
 /* xmit extension buff defination */
@@ -444,9 +430,7 @@ struct  submit_ctx {
 	u32 submit_time; /* */
 	u32 timeout_ms; /* <0: not synchronous, 0: wait forever, >0: up to ms waiting */
 	int status; /* status for operation */
-#ifdef PLATFORM_LINUX
 	struct completion done;
-#endif
 };
 
 enum {
@@ -491,62 +475,23 @@ struct xmit_buf {
 
 	struct submit_ctx *sctx;
 
-#ifdef CONFIG_USB_HCI
-
 	/* u32 sz[8]; */
 	u32	ff_hwaddr;
 #ifdef RTW_HALMAC
 	u8 bulkout_id; /* for halmac */
 #endif /* RTW_HALMAC */
 
-#if defined(PLATFORM_OS_XP) || defined(PLATFORM_LINUX) || defined(PLATFORM_FREEBSD)
 	PURB	pxmit_urb[8];
 	dma_addr_t dma_transfer_addr;	/* (in) dma addr for transfer_buffer */
-#endif
-
-#ifdef PLATFORM_OS_XP
-	PIRP		pxmit_irp[8];
-#endif
-
-#ifdef PLATFORM_OS_CE
-	USB_TRANSFER	usb_transfer_write_port;
-#endif
 
 	u8 bpending[8];
 
 	sint last[8];
 
-#endif
-
-#if defined(CONFIG_SDIO_HCI) || defined(CONFIG_GSPI_HCI)
-	u8 *phead;
-	u8 *pdata;
-	u8 *ptail;
-	u8 *pend;
-	u32 ff_hwaddr;
-	u8	pg_num;
-	u8	agg_num;
-#ifdef PLATFORM_OS_XP
-	PMDL pxmitbuf_mdl;
-	PIRP  pxmitbuf_irp;
-	PSDBUS_REQUEST_PACKET pxmitbuf_sdrp;
-#endif
-#endif
-
-#ifdef CONFIG_PCI_HCI
-#ifdef CONFIG_TRX_BD_ARCH
-	/*struct tx_buf_desc *buf_desc;*/
-#else
-	struct tx_desc *desc;
-#endif
-#endif
-
 #if defined(DBG_XMIT_BUF) || defined(DBG_XMIT_BUF_EXT)
 	u8 no;
 #endif
-
 };
-
 
 struct xmit_frame {
 	_list	list;
@@ -694,43 +639,19 @@ struct	xmit_priv	{
 
 	u8	wmm_para_seq[4];/* sequence for wmm ac parameter strength from large to small. it's value is 0->vo, 1->vi, 2->be, 3->bk. */
 
-#ifdef CONFIG_USB_HCI
 	_sema	tx_retevt;/* all tx return event; */
 	u8		txirp_cnt;
 
-#ifdef PLATFORM_OS_CE
-	USB_TRANSFER	usb_transfer_write_port;
-	/*	USB_TRANSFER	usb_transfer_write_mem; */
-#endif
-#ifdef PLATFORM_LINUX
 	struct tasklet_struct xmit_tasklet;
-#endif
-#ifdef PLATFORM_FREEBSD
-	struct task xmit_tasklet;
-#endif
 	/* per AC pending irp */
 	int beq_cnt;
 	int bkq_cnt;
 	int viq_cnt;
 	int voq_cnt;
 
-#endif
-
-#ifdef CONFIG_PCI_HCI
-	/* Tx */
-	struct rtw_tx_ring	tx_ring[PCI_MAX_TX_QUEUE_COUNT];
-	int	txringcount[PCI_MAX_TX_QUEUE_COUNT];
-	u8 	beaconDMAing;		/* flag of indicating beacon is transmiting to HW by DMA */
-#ifdef PLATFORM_LINUX
-	struct tasklet_struct xmit_tasklet;
-#endif
-#endif
-
 #if defined(CONFIG_SDIO_HCI) || defined(CONFIG_GSPI_HCI)
 #ifdef CONFIG_SDIO_TX_TASKLET
-#ifdef PLATFORM_LINUX
 	struct tasklet_struct xmit_tasklet;
-#endif /* PLATFORM_LINUX */
 #else
 	_thread_hdl_	SdioXmitThread;
 	_sema		SdioXmitSema;
