@@ -19,7 +19,7 @@
  ******************************************************************************/
 
 #ifndef	__PHYDM_FEATURES_H__
-#define __PHYDM_FEATURES
+#define	__PHYDM_FEATURES_H__
 
 #define ODM_DC_CANCELLATION_SUPPORT		(ODM_RTL8188F | ODM_RTL8710B | ODM_RTL8821C | ODM_RTL8822B)
 

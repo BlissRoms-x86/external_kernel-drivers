@@ -17,7 +17,7 @@
  *
  *
  ******************************************************************************/
-#ifndef _RTL88812A_SRESET_H_
+#ifndef _RTL8812A_SRESET_H_
 #define _RTL8812A_SRESET_H_
 
 #include <rtw_sreset.h>
