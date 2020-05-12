@@ -1,5 +1,14 @@
 --- a/Makefile
 +++ b/Makefile
+@@ -115,7 +115,7 @@
+ GCCVERSION := $(subst $(space),$(empty),$(GCCVERSION))
+ # Crop the version number to 3 decimals.
+ GCCVERSION := $(shell expr `echo $(GCCVERSION)` | cut -b1-3)
+-GE_49 := $(shell expr `echo $(GCCVERSION)` \>= 490)
++GE_49 := $(if $(CONFIG_CC_IS_CLANG),1,$(shell expr `echo $(GCCVERSION)` \>= 490))
+ 
+ EXTRA_CFLAGS :=
+ 
 @@ -145,7 +145,7 @@
  EXTRA_CFLAGS       += -Wno-date-time
  endif
