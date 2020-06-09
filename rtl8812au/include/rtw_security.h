@@ -20,6 +20,7 @@
 #ifndef __RTW_SECURITY_H_
 #define __RTW_SECURITY_H_
 
+#include <linux/version.h>
 
 #define _NO_PRIVACY_		0x0
 #define _WEP40_				0x1
@@ -241,11 +242,13 @@ struct security_priv {
 #endif /* DBG_SW_SEC_CNT */
 };
 
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(5, 8, 0))
 struct sha256_state {
 	u64 length;
 	u32 state[8], curlen;
 	u8 buf[64];
 };
+#endif  /* Linux kernel < 5.8.0 */
 
 #define GET_ENCRY_ALGO(psecuritypriv, psta, encry_algo, bmcst)\
 	do {\

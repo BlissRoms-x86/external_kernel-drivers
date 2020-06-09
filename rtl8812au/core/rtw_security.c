@@ -2090,6 +2090,7 @@ BIP_exit:
 #endif /* CONFIG_IEEE80211W */
 
 #ifndef PLATFORM_FREEBSD
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(5, 8, 0))
 /* compress 512-bits */
 static int sha256_compress(struct sha256_state *md, unsigned char *buf)
 {
@@ -2359,6 +2360,7 @@ static void hmac_sha256_vector(u8 *key, size_t key_len, size_t num_elem,
 	_len[1] = 32;
 	sha256_vector(2, _addr, _len, mac);
 }
+#endif  /* Linux kernel < 5.8.0 */
 #endif /* PLATFORM_FREEBSD */
 /**
  * sha256_prf - SHA256-based Pseudo-Random Function (IEEE 802.11r, 8.5.1.5.2)
@@ -2374,6 +2376,7 @@ static void hmac_sha256_vector(u8 *key, size_t key_len, size_t num_elem,
  * given key.
  */
 #ifndef PLATFORM_FREEBSD /* Baron */
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(5, 8, 0))
 static void sha256_prf(u8 *key, size_t key_len, char *label,
 		       u8 *data, size_t data_len, u8 *buf, size_t buf_len)
 {
@@ -2410,6 +2413,7 @@ static void sha256_prf(u8 *key, size_t key_len, char *label,
 		counter++;
 	}
 }
+#endif  /* Linux kernel < 5.8.0 */
 #endif /* PLATFORM_FREEBSD Baron */
 
 /* AES tables*/
