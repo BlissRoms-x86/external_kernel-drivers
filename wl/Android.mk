@@ -9,6 +9,7 @@
 #
 
 LOCAL_PATH := $(my-dir)
+CUR_LOCAL_PATH := $(call my-dir)
 LOCAL_MODULE := $(notdir $(LOCAL_PATH))
 EXTRA_KERNEL_MODULE_PATH_$(LOCAL_MODULE) := $(LOCAL_PATH)
 
@@ -23,7 +24,7 @@ WL_PATCHES := $(wildcard $(LOCAL_PATH)/*.patch)
 
 $(WL_SRC):
 	@echo Downloading $(@F)...
-	$(hide) mkdir -p $(@D) && /usr/bin/curl -k https://docs.broadcom.com/docs-and-downloads/docs/linux_sta/$(@F) > $@ || rm -f $@
+	$(hide) mkdir -p $(@D) && cp $(CUR_LOCAL_PATH)/$(@F) $@
 
 $(WL_LIB): $(WL_SRC) $(WL_PATCHES)
 	$(hide) tar zxf $< -C $(@D) --overwrite -m && \
