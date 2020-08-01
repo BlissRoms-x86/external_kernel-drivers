@@ -1,6 +1,6 @@
 /******************************************************************************
  *
- * Copyright(c) 2007 - 2011 Realtek Corporation. All rights reserved.
+ * Copyright(c) 2007 - 2017 Realtek Corporation.
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of version 2 of the GNU General Public License as
@@ -11,25 +11,37 @@
  * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
  * more details.
  *
- * You should have received a copy of the GNU General Public License along with
- * this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110, USA
- *
- *
- ******************************************************************************/
+ *****************************************************************************/
 #define _RTL8812A_PHYCFG_C_
-
-/* #include <drv_types.h> */
 
 #include <rtl8812a_hal.h>
 
-/*---------------------Define local function prototype-----------------------*/
+/* Manual Transmit Power Control 
+   The following options take values from 0 to 63, where:
+   0 - disable
+   1 - lowest transmit power the device can do
+   2 - highest transmit power the device can do
+   Note that these options may override your country's regulations about transmit power.
+   Setting the device to work at higher transmit powers most of the time may cause premature 
+   failure or damage by overheating. Make sure the device has enough airflow before you increase this.
+   It is currently unknown what these values translate to in dBm.
+*/
 
-/*----------------------------Function Body----------------------------------*/
+// Transmit Power Boost
+// This value is added to the device's calculation of transmit power index.
+// Useful if you want to keep power usage low while still boosting/decreasing transmit power.
+// Can take a negative value as well to reduce power.
+// Zero disables it. Default: 2, for a tiny boost.
+int transmit_power_boost = 2;
+// (ADVANCED) To know what transmit powers this device decides to use dynamically, see:
+// https://github.com/lwfinger/rtl8192ee/blob/42ad92dcc71cb15a62f8c39e50debe3a28566b5f/hal/phydm/rtl8192e/halhwimg8192e_rf.c#L1310
 
-/*
- * 1. BB register R/W API
- *   */
+// Transmit Power Override
+// This value completely overrides the driver's calculations and uses only one value for all transmissions.
+// Zero disables it. Default: 0
+int transmit_power_override = 0;
+
+/* Manual Transmit Power Control */
 
 u32
 PHY_QueryBBReg8812(
@@ -56,7 +68,7 @@ PHY_QueryBBReg8812(
 }
 
 
-void
+VOID
 PHY_SetBBReg8812(
 	IN	PADAPTER	Adapter,
 	IN	u4Byte		RegAddr,
@@ -89,7 +101,7 @@ PHY_SetBBReg8812(
 static	u32
 phy_RFSerialRead(
 	IN	PADAPTER		Adapter,
-	IN	u8				eRFPath,
+	IN	enum rf_path		eRFPath,
 	IN	u32				Offset
 )
 {
@@ -142,10 +154,10 @@ phy_RFSerialRead(
 }
 
 
-static	void
+static	VOID
 phy_RFSerialWrite(
 	IN	PADAPTER		Adapter,
-	IN	u8				eRFPath,
+	IN	enum rf_path		eRFPath,
 	IN	u32				Offset,
 	IN	u32				Data
 )
@@ -179,7 +191,7 @@ phy_RFSerialWrite(
 u32
 PHY_QueryRFReg8812(
 	IN	PADAPTER		Adapter,
-	IN	u8				eRFPath,
+	IN	enum rf_path		eRFPath,
 	IN	u32				RegAddr,
 	IN	u32				BitMask
 )
@@ -198,10 +210,10 @@ PHY_QueryRFReg8812(
 	return Readback_Value;
 }
 
-void
+VOID
 PHY_SetRFReg8812(
 	IN	PADAPTER		Adapter,
-	IN	u8				eRFPath,
+	IN	enum rf_path		eRFPath,
 	IN	u32				RegAddr,
 	IN	u32				BitMask,
 	IN	u32				Data
@@ -253,7 +265,7 @@ s32 PHY_MACConfig8812(PADAPTER Adapter)
 }
 
 
-static	void
+static	VOID
 phy_InitBBRFRegisterDefinition(
 	IN	PADAPTER		Adapter
 )
@@ -261,31 +273,31 @@ phy_InitBBRFRegisterDefinition(
 	HAL_DATA_TYPE		*pHalData = GET_HAL_DATA(Adapter);
 
 	/* RF Interface Sowrtware Control */
-	pHalData->PHYRegDef[ODM_RF_PATH_A].rfintfs = rFPGA0_XAB_RFInterfaceSW; /* 16 LSBs if read 32-bit from 0x870 */
-	pHalData->PHYRegDef[ODM_RF_PATH_B].rfintfs = rFPGA0_XAB_RFInterfaceSW; /* 16 MSBs if read 32-bit from 0x870 (16-bit for 0x872) */
+	pHalData->PHYRegDef[RF_PATH_A].rfintfs = rFPGA0_XAB_RFInterfaceSW; /* 16 LSBs if read 32-bit from 0x870 */
+	pHalData->PHYRegDef[RF_PATH_B].rfintfs = rFPGA0_XAB_RFInterfaceSW; /* 16 MSBs if read 32-bit from 0x870 (16-bit for 0x872) */
 
 	/* RF Interface Output (and Enable) */
-	pHalData->PHYRegDef[ODM_RF_PATH_A].rfintfo = rFPGA0_XA_RFInterfaceOE; /* 16 LSBs if read 32-bit from 0x860 */
-	pHalData->PHYRegDef[ODM_RF_PATH_B].rfintfo = rFPGA0_XB_RFInterfaceOE; /* 16 LSBs if read 32-bit from 0x864 */
+	pHalData->PHYRegDef[RF_PATH_A].rfintfo = rFPGA0_XA_RFInterfaceOE; /* 16 LSBs if read 32-bit from 0x860 */
+	pHalData->PHYRegDef[RF_PATH_B].rfintfo = rFPGA0_XB_RFInterfaceOE; /* 16 LSBs if read 32-bit from 0x864 */
 
 	/* RF Interface (Output and)  Enable */
-	pHalData->PHYRegDef[ODM_RF_PATH_A].rfintfe = rFPGA0_XA_RFInterfaceOE; /* 16 MSBs if read 32-bit from 0x860 (16-bit for 0x862) */
-	pHalData->PHYRegDef[ODM_RF_PATH_B].rfintfe = rFPGA0_XB_RFInterfaceOE; /* 16 MSBs if read 32-bit from 0x864 (16-bit for 0x866) */
+	pHalData->PHYRegDef[RF_PATH_A].rfintfe = rFPGA0_XA_RFInterfaceOE; /* 16 MSBs if read 32-bit from 0x860 (16-bit for 0x862) */
+	pHalData->PHYRegDef[RF_PATH_B].rfintfe = rFPGA0_XB_RFInterfaceOE; /* 16 MSBs if read 32-bit from 0x864 (16-bit for 0x866) */
 
-	pHalData->PHYRegDef[ODM_RF_PATH_A].rf3wireOffset = rA_LSSIWrite_Jaguar; /* LSSI Parameter */
-	pHalData->PHYRegDef[ODM_RF_PATH_B].rf3wireOffset = rB_LSSIWrite_Jaguar;
+	pHalData->PHYRegDef[RF_PATH_A].rf3wireOffset = rA_LSSIWrite_Jaguar; /* LSSI Parameter */
+	pHalData->PHYRegDef[RF_PATH_B].rf3wireOffset = rB_LSSIWrite_Jaguar;
 
-	pHalData->PHYRegDef[ODM_RF_PATH_A].rfHSSIPara2 = rHSSIRead_Jaguar;  /* wire control parameter2 */
-	pHalData->PHYRegDef[ODM_RF_PATH_B].rfHSSIPara2 = rHSSIRead_Jaguar;  /* wire control parameter2 */
+	pHalData->PHYRegDef[RF_PATH_A].rfHSSIPara2 = rHSSIRead_Jaguar;  /* wire control parameter2 */
+	pHalData->PHYRegDef[RF_PATH_B].rfHSSIPara2 = rHSSIRead_Jaguar;  /* wire control parameter2 */
 
 	/* Tranceiver Readback LSSI/HSPI mode */
-	pHalData->PHYRegDef[ODM_RF_PATH_A].rfLSSIReadBack = rA_SIRead_Jaguar;
-	pHalData->PHYRegDef[ODM_RF_PATH_B].rfLSSIReadBack = rB_SIRead_Jaguar;
-	pHalData->PHYRegDef[ODM_RF_PATH_A].rfLSSIReadBackPi = rA_PIRead_Jaguar;
-	pHalData->PHYRegDef[ODM_RF_PATH_B].rfLSSIReadBackPi = rB_PIRead_Jaguar;
+	pHalData->PHYRegDef[RF_PATH_A].rfLSSIReadBack = rA_SIRead_Jaguar;
+	pHalData->PHYRegDef[RF_PATH_B].rfLSSIReadBack = rB_SIRead_Jaguar;
+	pHalData->PHYRegDef[RF_PATH_A].rfLSSIReadBackPi = rA_PIRead_Jaguar;
+	pHalData->PHYRegDef[RF_PATH_B].rfLSSIReadBackPi = rB_PIRead_Jaguar;
 }
 
-void
+VOID
 PHY_BB8812_Config_1T(
 	IN PADAPTER Adapter
 )
@@ -408,9 +420,6 @@ PHY_BBConfig8812(
 
 	hal_set_crystal_cap(Adapter, pHalData->crystal_cap);
 
-	if (IS_HARDWARE_TYPE_JAGUAR(Adapter))
-		pHalData->Reg837 = rtw_read8(Adapter, 0x837);
-
 	return rtStatus;
 }
 
@@ -437,10 +446,10 @@ PHY_RFConfig8812(
 	return rtStatus;
 }
 
-void
+VOID
 PHY_TxPowerTrainingByPath_8812(
 	IN	PADAPTER			Adapter,
-	IN	CHANNEL_WIDTH		BandWidth,
+	IN	enum channel_width	BandWidth,
 	IN	u8					Channel,
 	IN	u8					RfPath
 )
@@ -454,11 +463,11 @@ PHY_TxPowerTrainingByPath_8812(
 		return;
 
 	writeData = 0;
-	if (RfPath == ODM_RF_PATH_A) {
-		PowerLevel = phy_get_tx_power_index(Adapter, ODM_RF_PATH_A, MGN_MCS7, BandWidth, Channel);
+	if (RfPath == RF_PATH_A) {
+		PowerLevel = phy_get_tx_power_index(Adapter, RF_PATH_A, MGN_MCS7, BandWidth, Channel);
 		writeOffset =  rA_TxPwrTraing_Jaguar;
 	} else {
-		PowerLevel = phy_get_tx_power_index(Adapter, ODM_RF_PATH_B, MGN_MCS7, BandWidth, Channel);
+		PowerLevel = phy_get_tx_power_index(Adapter, RF_PATH_B, MGN_MCS7, BandWidth, Channel);
 		writeOffset =  rB_TxPwrTraing_Jaguar;
 	}
 
@@ -475,18 +484,30 @@ PHY_TxPowerTrainingByPath_8812(
 	phy_set_bb_reg(Adapter, writeOffset, 0xffffff, writeData);
 }
 
-void
+VOID
 PHY_GetTxPowerLevel8812(
 	IN	PADAPTER		Adapter,
 	OUT s32		*powerlevel
 )
 {
+	/*HAL_DATA_TYPE	*pHalData = GET_HAL_DATA(Adapter);
+	*powerlevel = pHalData->CurrentTxPwrIdx;*/
+#if 0
+	HAL_DATA_TYPE	*pHalData = GET_HAL_DATA(Adapter);
+	PMGNT_INFO		pMgntInfo = &(Adapter->MgntInfo);
+	s4Byte			TxPwrDbm = 13;
+
+	if (pMgntInfo->ClientConfigPwrInDbm != UNSPECIFIED_PWR_DBM)
+		*powerlevel = pMgntInfo->ClientConfigPwrInDbm;
+	else
+		*powerlevel = TxPwrDbm;
+#endif
 }
 
 /* create new definition of PHY_SetTxPowerLevel8812 by YP.
  * Page revised on 20121106
  * the new way to set tx power by rate, NByte access, here N byte shall be 4 byte(DWord) or NByte(N>4) access. by page/YP, 20121106 */
-void
+VOID
 PHY_SetTxPowerLevel8812(
 	IN	PADAPTER		Adapter,
 	IN	u8				Channel
@@ -498,7 +519,7 @@ PHY_SetTxPowerLevel8812(
 
 	/* RTW_INFO("==>PHY_SetTxPowerLevel8812()\n"); */
 
-	for (path = ODM_RF_PATH_A; path < pHalData->NumTotalRFPath; ++path) {
+	for (path = RF_PATH_A; path < pHalData->NumTotalRFPath; ++path) {
 		phy_set_tx_power_level_by_path(Adapter, Channel, path);
 		PHY_TxPowerTrainingByPath_8812(Adapter, pHalData->current_channel_bw, Channel, path);
 	}
@@ -506,22 +527,6 @@ PHY_SetTxPowerLevel8812(
 	/* RTW_INFO("<==PHY_SetTxPowerLevel8812()\n"); */
 }
 
-u8
-phy_GetCurrentTxNum_8812A(
-	IN	PADAPTER		pAdapter,
-	IN	u8				Rate
-)
-{
-	u8	tx_num = 0;
-
-	if ((Rate >= MGN_MCS8 && Rate <= MGN_MCS15) ||
-	    (Rate >= MGN_VHT2SS_MCS0 && Rate <= MGN_VHT2SS_MCS9))
-		tx_num = RF_2TX;
-	else
-		tx_num = RF_1TX;
-
-	return tx_num;
-}
 
 /**************************************************************************************************************
  *   Description:
@@ -532,7 +537,7 @@ phy_GetCurrentTxNum_8812A(
 u8
 PHY_GetTxPowerIndex_8812A(
 	IN	PADAPTER			pAdapter,
-	IN	u8					RFPath,
+	IN	enum rf_path			RFPath,
 	IN	u8					Rate,
 	IN	u8					BandWidth,
 	IN	u8					Channel,
@@ -540,14 +545,16 @@ PHY_GetTxPowerIndex_8812A(
 )
 {
 	PHAL_DATA_TYPE pHalData = GET_HAL_DATA(pAdapter);
-	u8 base_idx = 0, power_idx = 0;
+	struct hal_spec_t *hal_spec = GET_HAL_SPEC(pAdapter);
+	s16 power_idx;
+	u8 base_idx = 0;
 	s8 by_rate_diff = 0, limit = 0, tpt_offset = 0, extra_bias = 0;
-	u8 tx_num = phy_GetCurrentTxNum_8812A(pAdapter, Rate);
+	u8 ntx_idx = phy_get_current_tx_num(pAdapter, Rate);
 	BOOLEAN bIn24G = _FALSE;
 
-	base_idx = PHY_GetTxPowerIndexBase(pAdapter, RFPath, Rate, BandWidth, Channel, &bIn24G);
+	base_idx = PHY_GetTxPowerIndexBase(pAdapter, RFPath, Rate, ntx_idx, BandWidth, Channel, &bIn24G);
 
-	by_rate_diff = PHY_GetTxPowerByRate(pAdapter, (u8)(!bIn24G), RFPath, tx_num, Rate);
+	by_rate_diff = PHY_GetTxPowerByRate(pAdapter, (u8)(!bIn24G), RFPath, Rate);
 #ifdef CONFIG_USB_HCI
 	/* no external power, so disable power by rate in VHT to avoid card disable */
 #ifndef CONFIG_USE_EXTERNAL_POWER
@@ -569,11 +576,12 @@ PHY_GetTxPowerIndex_8812A(
 #endif
 #endif
 
-	limit = PHY_GetTxPowerLimit(pAdapter, pAdapter->registrypriv.RegPwrTblSel, (u8)(!bIn24G), pHalData->current_channel_bw, RFPath, Rate, pHalData->current_channel);
+	limit = PHY_GetTxPowerLimit(pAdapter, NULL, (u8)(!bIn24G), pHalData->current_channel_bw, RFPath, Rate, ntx_idx, pHalData->current_channel);
 
 	tpt_offset = PHY_GetTxPowerTrackingOffset(pAdapter, RFPath, Rate);
 
 	if (tic) {
+		tic->ntx_idx = ntx_idx;
 		tic->base = base_idx;
 		tic->by_rate = by_rate_diff;
 		tic->limit = limit;
@@ -582,10 +590,17 @@ PHY_GetTxPowerIndex_8812A(
 	}
 
 	by_rate_diff = by_rate_diff > limit ? limit : by_rate_diff;
-	power_idx = base_idx + by_rate_diff + tpt_offset + extra_bias;
+	power_idx = base_idx + by_rate_diff + tpt_offset + extra_bias + transmit_power_boost;
 
-	if (power_idx > MAX_POWER_INDEX)
-		power_idx = MAX_POWER_INDEX;
+	if (transmit_power_override != 0)
+		power_idx = transmit_power_override;
+	if (power_idx < 1)
+		power_idx = 1;
+
+	if (power_idx < 0)
+		power_idx = 0;
+	else if (power_idx > hal_spec->txgi_max)
+		power_idx = hal_spec->txgi_max;
 
 	if (power_idx % 2 == 1 && !IS_NORMAL_CHIP(pHalData->version_id))
 		--power_idx;
@@ -600,11 +615,11 @@ PHY_GetTxPowerIndex_8812A(
  *                                                                                    <20120830, Kordan>
  **************************************************************************************************************/
 
-void
+VOID
 PHY_SetTxPowerIndex_8812A(
 	IN	PADAPTER		Adapter,
 	IN	u32				PowerIndex,
-	IN	u8				RFPath,
+	IN	enum rf_path		RFPath,
 	IN	u8				Rate
 )
 {
@@ -955,12 +970,12 @@ PHY_UpdateTxPowerDbm8812(
 u32 phy_get_tx_bb_swing_8812a(
 	IN	PADAPTER	Adapter,
 	IN	BAND_TYPE	Band,
-	IN	u8			RFPath
+	IN	enum rf_path	RFPath
 )
 {
 	HAL_DATA_TYPE	*pHalData = GET_HAL_DATA(GetDefaultAdapter(Adapter));
-	struct PHY_DM_STRUCT		*pDM_Odm = &pHalData->odmpriv;
-	struct odm_rf_calibration_structure	*pRFCalibrateInfo = &(pDM_Odm->rf_calibrate_info);
+	struct dm_struct		*pDM_Odm = &pHalData->odmpriv;
+	struct dm_rf_calibration_struct	*pRFCalibrateInfo = &(pDM_Odm->rf_calibrate_info);
 
 	s8	bbSwing_2G = -1 * GetRegTxBBSwing_2G(Adapter);
 	s8	bbSwing_5G = -1 * GetRegTxBBSwing_5G(Adapter);
@@ -1045,9 +1060,9 @@ u32 phy_get_tx_bb_swing_8812a(
 				swing = 0x00;
 		}
 
-		if (RFPath == ODM_RF_PATH_A)
+		if (RFPath == RF_PATH_A)
 			onePathSwing = (swing & 0x3) >> 0; /* 0xC6/C7[1:0] */
-		else if (RFPath == ODM_RF_PATH_B)
+		else if (RFPath == RF_PATH_B)
 			onePathSwing = (swing & 0xC) >> 2; /* 0xC6/C7[3:2] */
 
 		if (onePathSwing == 0x0) {
@@ -1082,7 +1097,7 @@ u32 phy_get_tx_bb_swing_8812a(
 	return out;
 }
 
-void
+VOID
 phy_SetRFEReg8812(
 	IN PADAPTER		Adapter,
 	IN u8			Band
@@ -1137,6 +1152,12 @@ phy_SetRFEReg8812(
 			rtw_write8(Adapter, rA_RFE_Inv_Jaguar + 3, (u1tmp &= ~BIT0));
 			phy_set_bb_reg(Adapter, rB_RFE_Inv_Jaguar, bMask_RFEInv_Jaguar, 0x000);
 			break;
+		case 6:
+			phy_set_bb_reg(Adapter, rA_RFE_Pinmux_Jaguar, bMaskDWord, 0x07772770);
+			phy_set_bb_reg(Adapter, rB_RFE_Pinmux_Jaguar, bMaskDWord, 0x07772770);
+			phy_set_bb_reg(Adapter, rA_RFE_Inv_Jaguar, bMaskDWord, 0x00000077);
+			phy_set_bb_reg(Adapter, rB_RFE_Inv_Jaguar, bMaskDWord, 0x00000077);
+			break;
 		default:
 			break;
 		}
@@ -1184,6 +1205,12 @@ phy_SetRFEReg8812(
 			u1tmp = rtw_read8(Adapter, rA_RFE_Inv_Jaguar + 3);
 			rtw_write8(Adapter, rA_RFE_Inv_Jaguar + 3, (u1tmp |= BIT0));
 			phy_set_bb_reg(Adapter, rB_RFE_Inv_Jaguar, bMask_RFEInv_Jaguar, 0x010);
+			break;	
+		case 6:
+			phy_set_bb_reg(Adapter, rA_RFE_Pinmux_Jaguar, bMaskDWord, 0x07737717);
+			phy_set_bb_reg(Adapter, rB_RFE_Pinmux_Jaguar, bMaskDWord, 0x07737717);
+			phy_set_bb_reg(Adapter, rA_RFE_Inv_Jaguar, bMaskDWord, 0x00000077);
+			phy_set_bb_reg(Adapter, rB_RFE_Inv_Jaguar, bMaskDWord, 0x00000077);
 			break;
 		default:
 			break;
@@ -1205,14 +1232,14 @@ void phy_SetBBSwingByBand_8812A(
 		PMPT_CONTEXT	pMptCtx = &(Adapter->mppriv.mpt_ctx);
 #endif
 		s8	BBDiffBetweenBand = 0;
-		struct PHY_DM_STRUCT		*pDM_Odm = &pHalData->odmpriv;
-		struct odm_rf_calibration_structure	*pRFCalibrateInfo = &(pDM_Odm->rf_calibrate_info);
-		u8	path = ODM_RF_PATH_A;
+		struct dm_struct		*pDM_Odm = &pHalData->odmpriv;
+		struct dm_rf_calibration_struct	*pRFCalibrateInfo = &(pDM_Odm->rf_calibrate_info);
+		u8	path = RF_PATH_A;
 
 		phy_set_bb_reg(Adapter, rA_TxScale_Jaguar, 0xFFE00000,
-			phy_get_tx_bb_swing_8812a(Adapter, (BAND_TYPE)Band, ODM_RF_PATH_A)); /* 0xC1C[31:21] */
+			phy_get_tx_bb_swing_8812a(Adapter, (BAND_TYPE)Band, RF_PATH_A)); /* 0xC1C[31:21] */
 		phy_set_bb_reg(Adapter, rB_TxScale_Jaguar, 0xFFE00000,
-			phy_get_tx_bb_swing_8812a(Adapter, (BAND_TYPE)Band, ODM_RF_PATH_B)); /* 0xE1C[31:21] */
+			phy_get_tx_bb_swing_8812a(Adapter, (BAND_TYPE)Band, RF_PATH_B)); /* 0xE1C[31:21] */
 
 		/* <20121005, Kordan> When TxPowerTrack is ON, we should take care of the change of BB swing. */
 		/* That is, reset all info to trigger Tx power tracking. */
@@ -1233,7 +1260,7 @@ void phy_SetBBSwingByBand_8812A(
 }
 
 
-void
+VOID
 phy_SetRFEReg8821(
 	IN PADAPTER	Adapter,
 	IN u1Byte		Band
@@ -1348,7 +1375,7 @@ PHY_SwitchWirelessBand8812(
 		update_tx_basic_rate(Adapter, WIRELESS_11BG);
 
 		/* CCK_CHECK_en */
-		rtw_write8(Adapter, REG_CCK_CHECK_8812, 0x0);
+		rtw_write8(Adapter, REG_CCK_CHECK_8812, rtw_read8(Adapter, REG_CCK_CHECK_8812) & (~BIT(7)));
 	} else {	/* 5G band */
 		u16 count = 0, reg41A = 0;
 
@@ -1366,7 +1393,7 @@ PHY_SwitchWirelessBand8812(
 			phy_SetRFEReg8821(Adapter, Band);
 
 		/* CCK_CHECK_en */
-		rtw_write8(Adapter, REG_CCK_CHECK_8812, 0x80);
+		rtw_write8(Adapter, REG_CCK_CHECK_8812, rtw_read8(Adapter, REG_CCK_CHECK_8812) | BIT(7));
 
 		count = 0;
 		reg41A = rtw_read16(Adapter, REG_TXPKT_EMPTY);
@@ -1460,6 +1487,7 @@ phy_SwBand8812(
 	return ret_value;
 }
 
+#pragma clang optimize off
 u8
 phy_GetSecondaryChnl_8812(
 	IN	PADAPTER	Adapter
@@ -1501,11 +1529,12 @@ phy_GetSecondaryChnl_8812(
 	/*RTW_INFO("SCMapping: SC Value %x\n", ((SCSettingOf40 << 4) | SCSettingOf20));*/
 	return (SCSettingOf40 << 4) | SCSettingOf20;
 }
+#pragma clang optimize on
 
-void
+VOID
 phy_SetRegBW_8812(
 	IN	PADAPTER		Adapter,
-	CHANNEL_WIDTH	CurrentBW
+	enum channel_width	CurrentBW
 )
 {
 	u16	RegRfMod_BW, u2tmp = 0;
@@ -1536,7 +1565,7 @@ phy_SetRegBW_8812(
 void
 phy_FixSpur_8812A(
 	IN	PADAPTER	        pAdapter,
-	IN  CHANNEL_WIDTH    Bandwidth,
+	IN  enum channel_width    Bandwidth,
 	IN  u1Byte			    Channel
 )
 {
@@ -1576,13 +1605,13 @@ phy_FixSpur_8812A(
 
 }
 
-void
+VOID
 phy_PostSetBwMode8812(
 	IN	PADAPTER	Adapter
 )
 {
 	u8			SubChnlNum = 0;
-	u8			L1pkVal = 0;
+	u8			L1pkVal = 0, reg_837 = 0;
 	HAL_DATA_TYPE	*pHalData = GET_HAL_DATA(Adapter);
 
 
@@ -1598,6 +1627,7 @@ phy_PostSetBwMode8812(
 		return;
 	}
 
+	reg_837 = rtw_read8(Adapter, rBWIndication_Jaguar + 3);
 	/* 3 Set Reg848 Reg864 Reg8AC Reg8C4 RegA00 */
 	switch (pHalData->current_channel_bw) {
 	case CHANNEL_WIDTH_20:
@@ -1617,7 +1647,7 @@ phy_PostSetBwMode8812(
 		phy_set_bb_reg(Adapter, rRFMOD_Jaguar, 0x3C, SubChnlNum);
 		phy_set_bb_reg(Adapter, rCCAonSec_Jaguar, 0xf0000000, SubChnlNum);
 
-		if (pHalData->Reg837 & BIT2)
+		if (reg_837 & BIT2)
 			L1pkVal = 6;
 		else {
 			if (pHalData->rf_type == RF_2T2R)
@@ -1640,7 +1670,7 @@ phy_PostSetBwMode8812(
 		phy_set_bb_reg(Adapter, rRFMOD_Jaguar, 0x3C, SubChnlNum);
 		phy_set_bb_reg(Adapter, rCCAonSec_Jaguar, 0xf0000000, SubChnlNum);
 
-		if (pHalData->Reg837 & BIT2)
+		if (reg_837 & BIT2)
 			L1pkVal = 5;
 		else {
 			if (pHalData->rf_type == RF_2T2R)
@@ -1669,30 +1699,30 @@ phy_PostSetBwMode8812(
 }
 
 /* <20130207, Kordan> The variales initialized here are used in odm_LNAPowerControl(). */
-void phy_InitRssiTRSW(
+VOID phy_InitRssiTRSW(
 	IN	PADAPTER					pAdapter
 )
 {
 	HAL_DATA_TYPE	*pHalData = GET_HAL_DATA(pAdapter);
-	struct PHY_DM_STRUCT		*pDM_Odm = &pHalData->odmpriv;
+	struct dm_struct		*pDM_Odm = &pHalData->odmpriv;
 	u8			channel = pHalData->current_channel;
 
 	if (pHalData->rfe_type == 3) {
 
 		if (channel <= 14) {
-			pDM_Odm->RSSI_TRSW_H    = 70; /* Unit: percentage(%) */
-			pDM_Odm->RSSI_TRSW_iso  = 25;
+			pDM_Odm->rssi_trsw_h    = 70; /* Unit: percentage(%) */
+			pDM_Odm->rssi_trsw_iso  = 25;
 		} else {
-			pDM_Odm->RSSI_TRSW_H   = 80;
-			pDM_Odm->RSSI_TRSW_iso = 25;
+			pDM_Odm->rssi_trsw_h   = 80;
+			pDM_Odm->rssi_trsw_iso = 25;
 		}
 
-		pDM_Odm->RSSI_TRSW_L = pDM_Odm->RSSI_TRSW_H - pDM_Odm->RSSI_TRSW_iso - 10;
+		pDM_Odm->rssi_trsw_l = pDM_Odm->rssi_trsw_h - pDM_Odm->rssi_trsw_iso - 10;
 	}
 }
 
 /*Referenced from "WB-20130801-YN-RL6286 Settings for Spur Issues R02.xls"*/
-void
+VOID
 phy_SpurCalibration_8812A(
 	IN	PADAPTER	pAdapter,
 	IN	u8			Channel,
@@ -1739,12 +1769,12 @@ phy_SpurCalibration_8812A(
 
 }
 
-void
+VOID
 phy_SwChnl8812(
 	IN	PADAPTER	pAdapter
 )
 {
-	u8	eRFPath = 0;
+	enum rf_path	eRFPath = RF_PATH_A;
 	HAL_DATA_TYPE	*pHalData = GET_HAL_DATA(pAdapter);
 	u8	channelToSW = pHalData->current_channel;
 	u8	bandwidthToSw = pHalData->current_channel_bw;
@@ -1827,13 +1857,13 @@ phy_SwChnl8812(
 		phy_SpurCalibration_8812A(pAdapter, channelToSW, bandwidthToSw);
 }
 
-void
+VOID
 phy_SwChnlAndSetBwMode8812(
 	IN  PADAPTER		Adapter
 )
 {
 	HAL_DATA_TYPE		*pHalData = GET_HAL_DATA(Adapter);
-	struct PHY_DM_STRUCT			*pDM_Odm = &pHalData->odmpriv;
+	struct dm_struct			*pDM_Odm = &pHalData->odmpriv;
 	/* RTW_INFO("phy_SwChnlAndSetBwMode8812(): bSwChnl %d, bSetChnlBW %d\n", pHalData->bSwChnl, pHalData->bSetChnlBW); */
 	if (Adapter->bNotifyChannelChange) {
 		RTW_INFO("[%s] bSwChnl=%d, ch=%d, bSetChnlBW=%d, bw=%d\n",
@@ -1871,24 +1901,26 @@ phy_SwChnlAndSetBwMode8812(
 	   ) {
 		if (IS_HARDWARE_TYPE_8812(Adapter)) {
 #if (RTL8812A_SUPPORT == 1)
-			phy_iq_calibrate_8812a(Adapter, _FALSE);
+			/*phy_iq_calibrate_8812a(Adapter, _FALSE);*/
+			halrf_iqk_trigger(&pHalData->odmpriv, _FALSE);
 #endif
 		} else if (IS_HARDWARE_TYPE_8821(Adapter)) {
 #if (RTL8821A_SUPPORT == 1)
-			phy_iq_calibrate_8821a(pDM_Odm, _FALSE);
+			/*phy_iq_calibrate_8821a(pDM_Odm, _FALSE);*/
+			halrf_iqk_trigger(&pHalData->odmpriv, _FALSE);
 #endif
 		}
 		pHalData->bNeedIQK = _FALSE;
 	}
 }
 
-void
+VOID
 PHY_HandleSwChnlAndSetBW8812(
 	IN	PADAPTER			Adapter,
 	IN	BOOLEAN				bSwitchChannel,
 	IN	BOOLEAN				bSetBandWidth,
 	IN	u8					ChannelNum,
-	IN	CHANNEL_WIDTH		ChnlWidth,
+	IN	enum channel_width		ChnlWidth,
 	IN	u8					ChnlOffsetOf40MHz,
 	IN	u8					ChnlOffsetOf80MHz,
 	IN	u8					CenterFrequencyIndex1
@@ -1897,7 +1929,7 @@ PHY_HandleSwChnlAndSetBW8812(
 	PADAPTER			pDefAdapter =  GetDefaultAdapter(Adapter);
 	PHAL_DATA_TYPE		pHalData = GET_HAL_DATA(pDefAdapter);
 	u8					tmpChannel = pHalData->current_channel;
-	CHANNEL_WIDTH		tmpBW = pHalData->current_channel_bw;
+	enum channel_width	tmpBW = pHalData->current_channel_bw;
 	u8					tmpnCur40MhzPrimeSC = pHalData->nCur40MhzPrimeSC;
 	u8					tmpnCur80MhzPrimeSC = pHalData->nCur80MhzPrimeSC;
 	u8					tmpCenterFrequencyIndex1 = pHalData->CurrentCenterFrequencyIndex1;
@@ -1946,8 +1978,25 @@ PHY_HandleSwChnlAndSetBW8812(
 
 	if (pHalData->bSetChnlBW) {
 		pHalData->current_channel_bw = ChnlWidth;
+#if 0
+		if (ExtChnlOffsetOf40MHz == EXTCHNL_OFFSET_LOWER)
+			pHalData->nCur40MhzPrimeSC = HAL_PRIME_CHNL_OFFSET_UPPER;
+		else if (ExtChnlOffsetOf40MHz == EXTCHNL_OFFSET_UPPER)
+			pHalData->nCur40MhzPrimeSC = HAL_PRIME_CHNL_OFFSET_LOWER;
+		else
+			pHalData->nCur40MhzPrimeSC = HAL_PRIME_CHNL_OFFSET_DONT_CARE;
+
+		if (ExtChnlOffsetOf80MHz == EXTCHNL_OFFSET_LOWER)
+			pHalData->nCur80MhzPrimeSC = HAL_PRIME_CHNL_OFFSET_UPPER;
+		else if (ExtChnlOffsetOf80MHz == EXTCHNL_OFFSET_UPPER)
+			pHalData->nCur80MhzPrimeSC = HAL_PRIME_CHNL_OFFSET_LOWER;
+		else
+			pHalData->nCur80MhzPrimeSC = HAL_PRIME_CHNL_OFFSET_DONT_CARE;
+#else
 		pHalData->nCur40MhzPrimeSC = ChnlOffsetOf40MHz;
 		pHalData->nCur80MhzPrimeSC = ChnlOffsetOf80MHz;
+#endif
+
 		pHalData->CurrentCenterFrequencyIndex1 = CenterFrequencyIndex1;
 	}
 
@@ -1975,11 +2024,11 @@ PHY_HandleSwChnlAndSetBW8812(
 
 }
 
-void
+VOID
 PHY_SetSwChnlBWMode8812(
 	IN	PADAPTER			Adapter,
 	IN	u8					channel,
-	IN	CHANNEL_WIDTH		Bandwidth,
+	IN	enum channel_width	Bandwidth,
 	IN	u8					Offset40,
 	IN	u8					Offset80
 )

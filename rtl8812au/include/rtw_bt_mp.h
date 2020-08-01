@@ -1,6 +1,6 @@
 /******************************************************************************
  *
- * Copyright(c) 2007 - 2011 Realtek Corporation. All rights reserved.
+ * Copyright(c) 2007 - 2017 Realtek Corporation.
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of version 2 of the GNU General Public License as
@@ -11,12 +11,7 @@
  * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
  * more details.
  *
- * You should have received a copy of the GNU General Public License along with
- * this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110, USA
- *
- *
- ******************************************************************************/
+ *****************************************************************************/
 
 #ifndef __RTW_BT_MP_H
 #define __RTW_BT_MP_H
@@ -165,7 +160,7 @@ typedef enum _BT_REPORT_TYPE {
 	BT_REPORT_MAX
 } BT_REPORT_TYPE, *PBT_REPORT_TYPE;
 
-void
+VOID
 MPTBT_Test(
 	IN	PADAPTER	Adapter,
 	IN	u1Byte		opCode,
@@ -177,13 +172,13 @@ MPTBT_Test(
 NDIS_STATUS
 MPTBT_SendOidBT(
 	IN	PADAPTER		pAdapter,
-	IN	void *			InformationBuffer,
+	IN	PVOID			InformationBuffer,
 	IN	ULONG			InformationBufferLength,
 	OUT	PULONG			BytesRead,
 	OUT	PULONG			BytesNeeded
 );
 
-void
+VOID
 MPTBT_FwC2hBtMpCtrl(
 	PADAPTER	Adapter,
 	pu1Byte	tmpBuf,
@@ -192,9 +187,9 @@ MPTBT_FwC2hBtMpCtrl(
 
 void MPh2c_timeout_handle(void *FunctionContext);
 
-void mptbt_BtControlProcess(
+VOID mptbt_BtControlProcess(
 	PADAPTER	Adapter,
-	void *		pInBuf
+	PVOID		pInBuf
 );
 
 #define	BT_H2C_MAX_RETRY								1

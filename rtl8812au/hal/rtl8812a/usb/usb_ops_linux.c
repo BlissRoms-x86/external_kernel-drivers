@@ -1,6 +1,6 @@
 /******************************************************************************
  *
- * Copyright(c) 2007 - 2011 Realtek Corporation. All rights reserved.
+ * Copyright(c) 2007 - 2017 Realtek Corporation.
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of version 2 of the GNU General Public License as
@@ -11,12 +11,7 @@
  * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
  * more details.
  *
- * You should have received a copy of the GNU General Public License along with
- * this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110, USA
- *
- *
- ******************************************************************************/
+ *****************************************************************************/
 #define _HCI_OPS_OS_C_
 
 /* #include <drv_types.h> */
@@ -36,6 +31,21 @@ void interrupt_handler_8812au(_adapter *padapter, u16 pkt_len, u8 *pbuf)
 	/* HISR */
 	_rtw_memcpy(&(pHalData->IntArray[0]), &(pbuf[USB_INTR_CONTENT_HISR_OFFSET]), 4);
 	_rtw_memcpy(&(pHalData->IntArray[1]), &(pbuf[USB_INTR_CONTENT_HISRE_OFFSET]), 4);
+
+#if 0 /*DBG*/
+	{
+		u32 hisr = 0 , hisr_ex = 0;
+		_rtw_memcpy(&hisr, &(pHalData->IntArray[0]), 4);
+		hisr = le32_to_cpu(hisr);
+
+		_rtw_memcpy(&hisr_ex, &(pHalData->IntArray[1]), 4);
+		hisr_ex = le32_to_cpu(hisr_ex);
+
+		if ((hisr != 0) || (hisr_ex != 0))
+			RTW_INFO("===> %s hisr:0x%08x ,hisr_ex:0x%08x\n", __FUNCTION__, hisr, hisr_ex);
+	}
+#endif
+
 
 #ifdef CONFIG_LPS_LCLK
 	if (pHalData->IntArray[0]  & IMR_CPWM_88E) {
@@ -57,6 +67,14 @@ void interrupt_handler_8812au(_adapter *padapter, u16 pkt_len, u8 *pbuf)
 		if (pHalData->IntArray[0] & (IMR_TBDER_88E | IMR_TBDOK_88E))
 #endif
 		{
+#if 0
+			if (pHalData->IntArray[0] & IMR_BCNDMAINT0_88E)
+				RTW_INFO("%s: HISR_BCNERLY_INT\n", __func__);
+			if (pHalData->IntArray[0] & IMR_TBDOK_88E)
+				RTW_INFO("%s: HISR_TXBCNOK\n", __func__);
+			if (pHalData->IntArray[0] & IMR_TBDER_88E)
+				RTW_INFO("%s: HISR_TXBCNERR\n", __func__);
+#endif
 			rtw_mi_set_tx_beacon_cmd(padapter);
 		}
 #endif /* CONFIG_INTERRUPT_BASED_TXBCN */
@@ -144,7 +162,7 @@ int recvbuf2recvframe(PADAPTER padapter, void *ptr)
 
 #ifdef CONFIG_RX_PACKET_APPEND_FCS
 		if (check_fwstate(&padapter->mlmepriv, WIFI_MONITOR_STATE) == _FALSE)
-			if ((pattrib->pkt_rpt_type == NORMAL_RX) && (pHalData->ReceiveConfig & RCR_APPFCS))
+			if ((pattrib->pkt_rpt_type == NORMAL_RX) && rtw_hal_rcr_check(padapter, RCR_APPFCS))
 				pattrib->pkt_len -= IEEE80211_FCS_LEN;
 #endif
 		if (rtw_os_alloc_recvframe(padapter, precvframe,
@@ -157,20 +175,9 @@ int recvbuf2recvframe(PADAPTER padapter, void *ptr)
 		recvframe_put(precvframe, pattrib->pkt_len);
 		/* recvframe_pull(precvframe, drvinfo_sz + RXDESC_SIZE); */
 
-		if (pattrib->pkt_rpt_type == NORMAL_RX) { /* Normal rx packet */
-			if (pattrib->physt)
-				pphy_status = (pbuf + RXDESC_OFFSET);
-
-#ifdef CONFIG_CONCURRENT_MODE
-			pre_recv_entry(precvframe, pphy_status);
-#endif /*CONFIG_CONCURRENT_MODE*/
-
-			if (pattrib->physt && pphy_status)
-				rx_query_phy_status(precvframe, pphy_status);
-
-			rtw_recv_entry(precvframe);
-
-		} else { /* pkt_rpt_type == TX_REPORT1-CCX, TX_REPORT2-TX RTP,HIS_REPORT-USB HISR RTP */
+		if (pattrib->pkt_rpt_type == NORMAL_RX) /* Normal rx packet */
+			pre_recv_entry(precvframe, pattrib->physt ? (pbuf + RXDESC_OFFSET) : NULL);
+		else { /* pkt_rpt_type == TX_REPORT1-CCX, TX_REPORT2-TX RTP,HIS_REPORT-USB HISR RTP */
 			if (pattrib->pkt_rpt_type == C2H_PACKET) {
 				/*RTW_INFO("rx C2H_PACKET\n");*/
 				rtw_hal_c2h_pkt_pre_hdl(padapter, precvframe->u.hdr.rx_data, pattrib->pkt_len);

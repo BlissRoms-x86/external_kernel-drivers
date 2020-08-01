@@ -1,6 +1,6 @@
 /******************************************************************************
  *
- * Copyright(c) 2007 - 2011 Realtek Corporation. All rights reserved.
+ * Copyright(c) 2007 - 2017 Realtek Corporation.
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of version 2 of the GNU General Public License as
@@ -11,12 +11,7 @@
  * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
  * more details.
  *
- * You should have received a copy of the GNU General Public License along with
- * this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110, USA
- *
- *
- ******************************************************************************/
+ *****************************************************************************/
 #define _RTL8812A_RF6052_C_
 
 /* #include <drv_types.h> */
@@ -37,10 +32,10 @@
  *
  * Note:		For RF type 0222D
  *---------------------------------------------------------------------------*/
-void
+VOID
 PHY_RF6052SetBandwidth8812(
 	IN	PADAPTER				Adapter,
-	IN	CHANNEL_WIDTH		Bandwidth)	/* 20M or 40M */
+	IN	enum channel_width		Bandwidth)	/* 20M or 40M */
 {
 	HAL_DATA_TYPE	*pHalData = GET_HAL_DATA(Adapter);
 
@@ -74,7 +69,7 @@ phy_RF6052_Config_ParaFile_8812(
 	IN	PADAPTER		Adapter
 )
 {
-	u8					eRFPath;
+	enum rf_path			eRFPath;
 	int					rtStatus = _SUCCESS;
 	HAL_DATA_TYPE		*pHalData = GET_HAL_DATA(Adapter);
 
@@ -91,7 +86,7 @@ phy_RF6052_Config_ParaFile_8812(
 #endif
 			{
 #ifdef CONFIG_EMBEDDED_FWIMG
-				if (HAL_STATUS_FAILURE == odm_config_rf_with_header_file(&pHalData->odmpriv, CONFIG_RF_RADIO, (enum odm_rf_radio_path_e)eRFPath))
+				if (odm_config_rf_with_header_file(&pHalData->odmpriv, CONFIG_RF_RADIO, eRFPath) == HAL_STATUS_FAILURE)
 					rtStatus = _FAIL;
 #endif
 			}
@@ -102,7 +97,7 @@ phy_RF6052_Config_ParaFile_8812(
 #endif
 			{
 #ifdef CONFIG_EMBEDDED_FWIMG
-				if (HAL_STATUS_FAILURE == odm_config_rf_with_header_file(&pHalData->odmpriv, CONFIG_RF_RADIO, (enum odm_rf_radio_path_e)eRFPath))
+				if (odm_config_rf_with_header_file(&pHalData->odmpriv, CONFIG_RF_RADIO, eRFPath) == HAL_STATUS_FAILURE)
 					rtStatus = _FAIL;
 #endif
 			}

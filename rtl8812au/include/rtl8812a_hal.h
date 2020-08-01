@@ -1,6 +1,6 @@
 /******************************************************************************
  *
- * Copyright(c) 2007 - 2011 Realtek Corporation. All rights reserved.
+ * Copyright(c) 2007 - 2017 Realtek Corporation.
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of version 2 of the GNU General Public License as
@@ -11,12 +11,7 @@
  * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
  * more details.
  *
- * You should have received a copy of the GNU General Public License along with
- * this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110, USA
- *
- *
- ******************************************************************************/
+ *****************************************************************************/
 #ifndef __RTL8812A_HAL_H__
 #define __RTL8812A_HAL_H__
 
@@ -65,9 +60,13 @@
 #define Rtl8821A_NIC_LPS_ENTER_FLOW			rtl8821A_enter_lps_flow
 #define Rtl8821A_NIC_LPS_LEAVE_FLOW			rtl8821A_leave_lps_flow
 
+
+#if 1 /* download firmware related data structure */
 #define FW_SIZE_8812			0x8000 /* Compatible with RTL8723 Maximal RAM code size 24K.   modified to 32k, TO compatible with 92d maximal fw size 32k */
 #define FW_START_ADDRESS		0x1000
 #define FW_END_ADDRESS		0x5FFF
+
+
 
 typedef struct _RT_FIRMWARE_8812 {
 	FIRMWARE_SOURCE	eFWSource;
@@ -113,6 +112,9 @@ typedef struct _RT_FIRMWARE_8812 {
 #define GET_FIRMWARE_HDR_RSVD4_8812(__FwHdr)			LE_BITS_TO_4BYTE(__FwHdr+24, 0, 32)
 #define GET_FIRMWARE_HDR_RSVD5_8812(__FwHdr)			LE_BITS_TO_4BYTE(__FwHdr+28, 0, 32)
 
+#endif /* download firmware related data structure */
+
+
 #define DRIVER_EARLY_INT_TIME_8812		0x05
 #define BCN_DMA_ATIME_INT_TIME_8812		0x02
 
@@ -133,12 +135,18 @@ typedef struct _RT_FIRMWARE_8812 {
 #endif
 #define RX_DMA_BOUNDARY_8812		(MAX_RX_DMA_BUFFER_SIZE_8812 - RX_DMA_RESERVED_SIZE_8812 - 1)
 
-#define BCNQ_PAGE_NUM_8812		0x07
+#define PAGE_SIZE_TX_8812A PAGE_SIZE_512
+
+/* Beacon:MAX_BEACON_LEN/PAGE_SIZE_TX_8812A
+ * PS-Poll:1, Null Data:1,Qos Null Data:1,BT Qos Null Data:1,CTS-2-SELF,LTE QoS Null*/
+#define BCNQ_PAGE_NUM_8812		(MAX_BEACON_LEN / PAGE_SIZE_TX_8812A + 6) /*0x07*/
 
 /* For WoWLan , more reserved page
- * ARP Rsp:1, RWC:1, GTK Info:1,GTK RSP:1,GTK EXT MEM:1, AOAC rpt: 1,PNO: 6 */
+ * ARP Rsp:1, RWC:1, GTK Info:1,GTK RSP:1,GTK EXT MEM:1, AOAC rpt: 1,PNO: 6
+ * NS offload: 1 NDP info: 1
+ */
 #ifdef CONFIG_WOWLAN
-	#define WOWLAN_PAGE_NUM_8812	0x06
+	#define WOWLAN_PAGE_NUM_8812	0x08
 #else
 	#define WOWLAN_PAGE_NUM_8812	0x00
 #endif
@@ -150,7 +158,13 @@ typedef struct _RT_FIRMWARE_8812 {
 	#define FW_NDPA_PAGE_NUM	0x00
 #endif
 
-#define TX_TOTAL_PAGE_NUMBER_8812	(0xFF - BCNQ_PAGE_NUM_8812 - WOWLAN_PAGE_NUM_8812-FW_NDPA_PAGE_NUM)
+#ifdef DBG_FW_DEBUG_MSG_PKT
+	#define FW_DBG_MSG_PKT_PAGE_NUM_8812	0x01
+#else
+	#define FW_DBG_MSG_PKT_PAGE_NUM_8812	0x00
+#endif /*DBG_FW_DEBUG_MSG_PKT*/
+
+#define TX_TOTAL_PAGE_NUMBER_8812	(0xFF - BCNQ_PAGE_NUM_8812 - WOWLAN_PAGE_NUM_8812 - FW_NDPA_PAGE_NUM - FW_DBG_MSG_PKT_PAGE_NUM_8812)
 #define TX_PAGE_BOUNDARY_8812			(TX_TOTAL_PAGE_NUMBER_8812 + 1)
 
 #define TX_PAGE_BOUNDARY_WOWLAN_8812		(0xFF - BCNQ_PAGE_NUM_8812 - WOWLAN_PAGE_NUM_8812 + 1)
@@ -183,12 +197,11 @@ typedef struct _RT_FIRMWARE_8812 {
 #endif
 #define RX_DMA_BOUNDARY_8821		(MAX_RX_DMA_BUFFER_SIZE_8821 - RX_DMA_RESERVED_SIZE_8821 - 1)
 
-#define BCNQ_PAGE_NUM_8821		0x08
-#ifdef CONFIG_CONCURRENT_MODE
-	#define BCNQ1_PAGE_NUM_8821		0x04
-#else
-	#define BCNQ1_PAGE_NUM_8821		0x00
-#endif
+/* Beacon:MAX_BEACON_LEN/PAGE_SIZE_TX_8821A
+ * PS-Poll:1, Null Data:1,Qos Null Data:1,BT Qos Null Data:1,CTS-2-SELF,LTE QoS Null*/
+
+#define BCNQ_PAGE_NUM_8821		(MAX_BEACON_LEN / PAGE_SIZE_TX_8821A + 6) /*0x08*/
+
 
 /* For WoWLan , more reserved page
  * ARP Rsp:1, RWC:1, GTK Info:1,GTK RSP:1,GTK EXT MEM:1, PNO: 6 */
@@ -198,7 +211,7 @@ typedef struct _RT_FIRMWARE_8812 {
 	#define WOWLAN_PAGE_NUM_8821	0x00
 #endif
 
-#define TX_TOTAL_PAGE_NUMBER_8821	(0xFF - BCNQ_PAGE_NUM_8821 - BCNQ1_PAGE_NUM_8821 - WOWLAN_PAGE_NUM_8821)
+#define TX_TOTAL_PAGE_NUMBER_8821	(0xFF - BCNQ_PAGE_NUM_8821 - WOWLAN_PAGE_NUM_8821)
 #define TX_PAGE_BOUNDARY_8821				(TX_TOTAL_PAGE_NUMBER_8821 + 1)
 /* #define TX_PAGE_BOUNDARY_WOWLAN_8821		0xE0 */
 
@@ -210,10 +223,12 @@ typedef struct _RT_FIRMWARE_8812 {
 #define NORMAL_PAGE_NUM_LPQ_8821			0x08/* 0x10 */
 #define NORMAL_PAGE_NUM_HPQ_8821		0x08/* 0x10 */
 #define NORMAL_PAGE_NUM_NPQ_8821		0x00
+#define NORMAL_PAGE_NUM_EPQ_8821			0x04
 
 #define WMM_NORMAL_PAGE_NUM_HPQ_8821		0x30
 #define WMM_NORMAL_PAGE_NUM_LPQ_8821		0x20
 #define WMM_NORMAL_PAGE_NUM_NPQ_8821		0x20
+#define WMM_NORMAL_PAGE_NUM_EPQ_8821		0x00
 
 #define MCC_NORMAL_PAGE_NUM_HPQ_8821		0x10
 #define MCC_NORMAL_PAGE_NUM_LPQ_8821		0x10
@@ -224,8 +239,13 @@ typedef struct _RT_FIRMWARE_8812 {
 #define	EFUSE_HIDDEN_812AU_VL				2
 #define	EFUSE_HIDDEN_812AU_VN				3
 
+#if 0
+#define EFUSE_REAL_CONTENT_LEN_JAGUAR		1024
+#define HWSET_MAX_SIZE_JAGUAR					1024
+#else
 #define EFUSE_REAL_CONTENT_LEN_JAGUAR		512
 #define HWSET_MAX_SIZE_JAGUAR					512
+#endif
 
 #define EFUSE_MAX_BANK_8812A					2
 #define EFUSE_MAP_LEN_JAGUAR					512
@@ -317,7 +337,7 @@ void SetBeaconRelatedRegisters8812A(PADAPTER padapter);
 void ReadRFType8812A(PADAPTER padapter);
 void InitDefaultValue8821A(PADAPTER padapter);
 
-void SetHwReg8812A(PADAPTER padapter, u8 variable, u8 *pval);
+u8 SetHwReg8812A(PADAPTER padapter, u8 variable, u8 *pval);
 void GetHwReg8812A(PADAPTER padapter, u8 variable, u8 *pval);
 u8 SetHalDefVar8812A(PADAPTER padapter, HAL_DEF_VARIABLE variable, void *pval);
 u8 GetHalDefVar8812A(PADAPTER padapter, HAL_DEF_VARIABLE variable, void *pval);
@@ -325,22 +345,22 @@ void rtl8812_set_hal_ops(struct hal_ops *pHalFunc);
 void init_hal_spec_8812a(_adapter *adapter);
 void init_hal_spec_8821a(_adapter *adapter);
 
-/* register */
-void SetBcnCtrlReg(PADAPTER padapter, u8 SetBits, u8 ClearBits);
+u32 upload_txpktbuf_8812au(_adapter *adapter, u8 *buf, u32 buflen);
 
 void rtl8812_start_thread(PADAPTER padapter);
 void rtl8812_stop_thread(PADAPTER padapter);
 
 #ifdef CONFIG_PCI_HCI
 BOOLEAN	InterruptRecognized8812AE(PADAPTER Adapter);
-void	UpdateInterruptMask8812AE(PADAPTER Adapter, u32 AddMSR, u32 AddMSR1, u32 RemoveMSR, u32 RemoveMSR1);
+VOID	UpdateInterruptMask8812AE(PADAPTER Adapter, u32 AddMSR, u32 AddMSR1, u32 RemoveMSR, u32 RemoveMSR1);
+VOID	InitTRXDescHwAddress8812AE(PADAPTER Adapter);
 #endif
 
 #ifdef CONFIG_BT_COEXIST
 void rtl8812a_combo_card_WifiOnlyHwInit(PADAPTER Adapter);
 #endif
 
-void
+VOID
 Hal_PatchwithJaguar_8812(
 	IN PADAPTER				Adapter,
 	IN RT_MEDIA_STATUS		MediaStatus

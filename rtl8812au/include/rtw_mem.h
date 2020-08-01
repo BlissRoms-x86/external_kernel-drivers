@@ -1,6 +1,6 @@
 /******************************************************************************
  *
- * Copyright(c) 2007 - 2011 Realtek Corporation. All rights reserved.
+ * Copyright(c) 2007 - 2017 Realtek Corporation.
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of version 2 of the GNU General Public License as
@@ -11,12 +11,7 @@
  * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
  * more details.
  *
- * You should have received a copy of the GNU General Public License along with
- * this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110, USA
- *
- *
- ******************************************************************************/
+ *****************************************************************************/
 #ifndef __RTW_MEM_H__
 #define __RTW_MEM_H__
 
@@ -24,7 +19,11 @@
 #include <basic_types.h>
 #include <osdep_service.h>
 
-#define MAX_RTKM_RECVBUF_SZ (15360) /* 15k */
+#ifdef CONFIG_PLATFORM_MSTAR_HIGH
+	#define MAX_RTKM_RECVBUF_SZ (31744) /* 31k */
+#else
+	#define MAX_RTKM_RECVBUF_SZ (15360) /* 15k */
+#endif /* CONFIG_PLATFORM_MSTAR_HIGH */
 #define MAX_RTKM_NR_PREALLOC_RECV_SKB 16
 
 u16 rtw_rtkm_get_buff_size(void);

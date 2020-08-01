@@ -1,6 +1,6 @@
 /******************************************************************************
  *
- * Copyright(c) 2007 - 2011 Realtek Corporation. All rights reserved.
+ * Copyright(c) 2007 - 2017 Realtek Corporation.
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of version 2 of the GNU General Public License as
@@ -11,12 +11,7 @@
  * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
  * more details.
  *
- * You should have received a copy of the GNU General Public License along with
- * this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110, USA
- *
- *
- ******************************************************************************/
+ *****************************************************************************/
 
 #include <drv_types.h>
 
@@ -28,6 +23,7 @@ struct xmit_frame	*rtw_IOL_accquire_xmit_frame(ADAPTER *adapter)
 	struct pkt_attrib	*pattrib;
 	struct xmit_priv	*pxmitpriv = &(adapter->xmitpriv);
 
+#if 1
 	xmit_frame = rtw_alloc_xmitframe(pxmitpriv);
 	if (xmit_frame == NULL) {
 		RTW_INFO("%s rtw_alloc_xmitframe return null\n", __FUNCTION__);
@@ -52,6 +48,18 @@ struct xmit_frame	*rtw_IOL_accquire_xmit_frame(ADAPTER *adapter)
 	pattrib->qsel = QSLT_BEACON;/* Beacon	 */
 	pattrib->subtype = WIFI_BEACON;
 	pattrib->pktlen = pattrib->last_txcmdsz = 0;
+
+#else
+	xmit_frame = alloc_mgtxmitframe(pxmitpriv);
+	if (xmit_frame == NULL)
+		RTW_INFO("%s alloc_mgtxmitframe return null\n", __FUNCTION__);
+	else {
+		pattrib = &xmit_frame->attrib;
+		update_mgntframe_attrib(adapter, pattrib);
+		pattrib->qsel = QSLT_BEACON;
+		pattrib->pktlen = pattrib->last_txcmdsz = 0;
+	}
+#endif
 
 exit:
 	return xmit_frame;
@@ -293,24 +301,36 @@ int _rtw_IOL_append_WD_cmd(struct xmit_frame *xmit_frame, u16 addr, u32 value)
 #ifdef DBG_IO
 int dbg_rtw_IOL_append_WB_cmd(struct xmit_frame *xmit_frame, u16 addr, u8 value, const char *caller, const int line)
 {
-	if (match_write_sniff_ranges(addr, 1))
-		RTW_INFO("DBG_IO %s:%d IOL_WB(0x%04x, 0x%02x)\n", caller, line, addr, value);
+	const struct rtw_io_sniff_ent *ent = match_write_sniff(xmit_frame->padapter, addr, 1, value);
+
+	if (ent) {
+		RTW_INFO("DBG_IO %s:%d IOL_WB(0x%04x, 0x%02x) %s\n"
+			, caller, line, addr, value, rtw_io_sniff_ent_get_tag(ent));
+	}
 
 	return _rtw_IOL_append_WB_cmd(xmit_frame, addr, value);
 }
 
 int dbg_rtw_IOL_append_WW_cmd(struct xmit_frame *xmit_frame, u16 addr, u16 value, const char *caller, const int line)
 {
-	if (match_write_sniff_ranges(addr, 2))
-		RTW_INFO("DBG_IO %s:%d IOL_WW(0x%04x, 0x%04x)\n", caller, line, addr, value);
+	const struct rtw_io_sniff_ent *ent = match_write_sniff(xmit_frame->padapter, addr, 2, value);
+
+	if (ent) {
+		RTW_INFO("DBG_IO %s:%d IOL_WW(0x%04x, 0x%04x) %s\n"
+			, caller, line, addr, value, rtw_io_sniff_ent_get_tag(ent));
+	}
 
 	return _rtw_IOL_append_WW_cmd(xmit_frame, addr, value);
 }
 
 int dbg_rtw_IOL_append_WD_cmd(struct xmit_frame *xmit_frame, u16 addr, u32 value, const char *caller, const int line)
 {
-	if (match_write_sniff_ranges(addr, 4))
-		RTW_INFO("DBG_IO %s:%d IOL_WD(0x%04x, 0x%08x)\n", caller, line, addr, value);
+	const struct rtw_io_sniff_ent *ent = match_write_sniff(xmit_frame->padapter, addr, 4, value);
+
+	if (ent) {
+		RTW_INFO("DBG_IO %s:%d IOL_WD(0x%04x, 0x%08x) %s\n"
+			, caller, line, addr, value, rtw_io_sniff_ent_get_tag(ent));
+	}
 
 	return _rtw_IOL_append_WD_cmd(xmit_frame, addr, value);
 }

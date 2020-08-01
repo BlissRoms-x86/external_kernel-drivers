@@ -1,6 +1,6 @@
 /******************************************************************************
  *
- * Copyright(c) 2007 - 2011 Realtek Corporation. All rights reserved.
+ * Copyright(c) 2007 - 2017 Realtek Corporation.
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of version 2 of the GNU General Public License as
@@ -11,12 +11,7 @@
  * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
  * more details.
  *
- * You should have received a copy of the GNU General Public License along with
- * this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110, USA
- *
- *
- ******************************************************************************/
+ *****************************************************************************/
 #ifndef __RTW_EEPROM_H__
 #define __RTW_EEPROM_H__
 
@@ -110,10 +105,12 @@ extern void eeprom_read_sz(_adapter *padapter, u16 reg, u8 *data, u32 sz);
 
 extern void read_eeprom_content_by_attrib(_adapter	*padapter);
 
+#ifdef PLATFORM_LINUX
 #ifdef CONFIG_ADAPTOR_INFO_CACHING_FILE
 extern int isAdaptorInfoFileValid(void);
 extern int storeAdaptorInfoFile(char *path, u8 *efuse_data);
 extern int retriveAdaptorInfoFile(char *path, u8 *efuse_data);
 #endif /* CONFIG_ADAPTOR_INFO_CACHING_FILE */
+#endif /* PLATFORM_LINUX */
 
 #endif /* __RTL871X_EEPROM_H__ */

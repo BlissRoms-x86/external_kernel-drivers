@@ -1,6 +1,6 @@
 /******************************************************************************
  *
- * Copyright(c) 2007 - 2011 Realtek Corporation. All rights reserved.
+ * Copyright(c) 2007 - 2017 Realtek Corporation.
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of version 2 of the GNU General Public License as
@@ -11,12 +11,7 @@
  * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
  * more details.
  *
- * You should have received a copy of the GNU General Public License along with
- * this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110, USA
- *
- *
- ******************************************************************************/
+ *****************************************************************************/
 #define _RTW_BR_EXT_C_
 
 #ifdef __KERNEL__
@@ -28,8 +23,20 @@
 	#include <linux/if_pppox.h>
 #endif
 
-#include <drv_types.h>
-#include <hal_data.h>
+#if 1	/* rtw_wifi_driver */
+	#include <drv_types.h>
+#else	/* rtw_wifi_driver */
+	#include "./8192cd_cfg.h"
+
+	#ifndef __KERNEL__
+		#include "./sys-support.h"
+	#endif
+
+	#include "./8192cd.h"
+	#include "./8192cd_headers.h"
+	#include "./8192cd_br_ext.h"
+	#include "./8192cd_debug.h"
+#endif /* rtw_wifi_driver */
 
 #ifdef CL_IPV6_PASS
 	#ifdef __KERNEL__
@@ -72,6 +79,7 @@
   PPPoE |type|   SID   |           AC MAC            |
 -----------------------------------------------------------------*/
 
+
 /* Find a tag in pppoe frame and return the pointer */
 static __inline__ unsigned char *__nat25_find_pppoe_tag(struct pppoe_hdr *ph, unsigned short type)
 {
@@ -87,8 +95,9 @@ static __inline__ unsigned char *__nat25_find_pppoe_tag(struct pppoe_hdr *ph, un
 			return cur_ptr;
 		cur_ptr = cur_ptr + TAG_HDR_LEN + tagLen;
 	}
-	return NULL;
+	return 0;
 }
+
 
 static __inline__ int __nat25_add_pppoe_tag(struct sk_buff *skb, struct pppoe_tag *tag)
 {
@@ -139,6 +148,7 @@ static __inline__ unsigned long __nat25_timeout(_adapter *priv)
 	return timeout;
 }
 
+
 static __inline__ int  __nat25_has_expired(_adapter *priv,
 		struct nat25_network_db_entry *fdb)
 {
@@ -148,6 +158,7 @@ static __inline__ int  __nat25_has_expired(_adapter *priv,
 	return 0;
 }
 
+
 static __inline__ void __nat25_generate_ipv4_network_addr(unsigned char *networkAddr,
 		unsigned int *ipAddr)
 {
@@ -156,6 +167,7 @@ static __inline__ void __nat25_generate_ipv4_network_addr(unsigned char *network
 	networkAddr[0] = NAT25_IPV4;
 	memcpy(networkAddr + 7, (unsigned char *)ipAddr, 4);
 }
+
 
 static __inline__ void __nat25_generate_ipx_network_addr_with_node(unsigned char *networkAddr,
 		unsigned int *ipxNetAddr, unsigned char *ipxNodeAddr)
@@ -167,6 +179,7 @@ static __inline__ void __nat25_generate_ipx_network_addr_with_node(unsigned char
 	memcpy(networkAddr + 5, ipxNodeAddr, 6);
 }
 
+
 static __inline__ void __nat25_generate_ipx_network_addr_with_socket(unsigned char *networkAddr,
 		unsigned int *ipxNetAddr, unsigned short *ipxSocketAddr)
 {
@@ -176,6 +189,7 @@ static __inline__ void __nat25_generate_ipx_network_addr_with_socket(unsigned ch
 	memcpy(networkAddr + 1, (unsigned char *)ipxNetAddr, 4);
 	memcpy(networkAddr + 5, (unsigned char *)ipxSocketAddr, 2);
 }
+
 
 static __inline__ void __nat25_generate_apple_network_addr(unsigned char *networkAddr,
 		unsigned short *network, unsigned char *node)
@@ -187,8 +201,9 @@ static __inline__ void __nat25_generate_apple_network_addr(unsigned char *networ
 	networkAddr[3] = *node;
 }
 
+
 static __inline__ void __nat25_generate_pppoe_network_addr(unsigned char *networkAddr,
-		unsigned char *ac_mac, __be16 *sid)
+		unsigned char *ac_mac, unsigned short *sid)
 {
 	memset(networkAddr, 0, MAX_NETWORK_ADDR_LEN);
 
@@ -196,6 +211,7 @@ static __inline__ void __nat25_generate_pppoe_network_addr(unsigned char *networ
 	memcpy(networkAddr + 1, (unsigned char *)sid, 2);
 	memcpy(networkAddr + 3, (unsigned char *)ac_mac, 6);
 }
+
 
 #ifdef CL_IPV6_PASS
 static  void __nat25_generate_ipv6_network_addr(unsigned char *networkAddr,
@@ -206,6 +222,7 @@ static  void __nat25_generate_ipv6_network_addr(unsigned char *networkAddr,
 	networkAddr[0] = NAT25_IPV6;
 	memcpy(networkAddr + 1, (unsigned char *)ipAddr, 16);
 }
+
 
 static unsigned char *scan_tlv(unsigned char *data, int len, unsigned char tag, unsigned char len8b)
 {
@@ -218,6 +235,7 @@ static unsigned char *scan_tlv(unsigned char *data, int len, unsigned char tag, 
 	}
 	return NULL;
 }
+
 
 static int update_nd_link_layer_addr(unsigned char *data, int len, unsigned char *replace_mac)
 {
@@ -283,6 +301,7 @@ static int update_nd_link_layer_addr(unsigned char *data, int len, unsigned char
 	return 0;
 }
 
+#ifdef SUPPORT_RX_UNI2MCAST
 static void convert_ipv6_mac_to_mc(struct sk_buff *skb)
 {
 	struct ipv6hdr *iph = (struct ipv6hdr *)(skb->data + ETH_HLEN);
@@ -300,6 +319,8 @@ static void convert_ipv6_mac_to_mc(struct sk_buff *skb)
 #endif
 }
 #endif /* CL_IPV6_PASS */
+#endif /* SUPPORT_RX_UNI2MCAST */
+
 
 static __inline__ int __nat25_network_hash(unsigned char *networkAddr)
 {
@@ -352,6 +373,7 @@ static __inline__ int __nat25_network_hash(unsigned char *networkAddr)
 	}
 }
 
+
 static __inline__ void __network_hash_link(_adapter *priv,
 		struct nat25_network_db_entry *ent, int hash)
 {
@@ -368,6 +390,7 @@ static __inline__ void __network_hash_link(_adapter *priv,
 	/* _exit_critical_bh(&priv->br_ext_lock, &irqL); */
 }
 
+
 static __inline__ void __network_hash_unlink(struct nat25_network_db_entry *ent)
 {
 	/* Caller must _enter_critical_bh already! */
@@ -382,6 +405,7 @@ static __inline__ void __network_hash_unlink(struct nat25_network_db_entry *ent)
 
 	/* _exit_critical_bh(&priv->br_ext_lock, &irqL); */
 }
+
 
 static int __nat25_db_network_lookup_and_replace(_adapter *priv,
 		struct sk_buff *skb, unsigned char *networkAddr)
@@ -456,6 +480,7 @@ static int __nat25_db_network_lookup_and_replace(_adapter *priv,
 	return 0;
 }
 
+
 static void __nat25_db_network_insert(_adapter *priv,
 		      unsigned char *macAddr, unsigned char *networkAddr)
 {
@@ -492,6 +517,7 @@ static void __nat25_db_network_insert(_adapter *priv,
 
 	_exit_critical_bh(&priv->br_ext_lock, &irqL);
 }
+
 
 static void __nat25_db_print(_adapter *priv)
 {
@@ -573,6 +599,9 @@ static void __nat25_db_print(_adapter *priv)
 	_exit_critical_bh(&priv->br_ext_lock, &irqL);
 }
 
+
+
+
 /*
  *	NAT2.5 interface
  */
@@ -604,6 +633,7 @@ void nat25_db_cleanup(_adapter *priv)
 
 	_exit_critical_bh(&priv->br_ext_lock, &irqL);
 }
+
 
 void nat25_db_expire(_adapter *priv)
 {
@@ -692,6 +722,7 @@ void nat25_db_expire(_adapter *priv)
 	_exit_critical_bh(&priv->br_ext_lock, &irqL);
 }
 
+
 #ifdef SUPPORT_TX_MCAST2UNI
 static int checkIPMcAndReplace(_adapter *priv, struct sk_buff *skb, unsigned int *dst_ip)
 {
@@ -722,7 +753,7 @@ static int checkIPMcAndReplace(_adapter *priv, struct sk_buff *skb, unsigned int
 
 int nat25_db_handle(_adapter *priv, struct sk_buff *skb, int method)
 {
-	__be16 protocol;
+	unsigned short protocol;
 	unsigned char networkAddr[MAX_NETWORK_ADDR_LEN];
 
 	if (skb == NULL)
@@ -731,7 +762,7 @@ int nat25_db_handle(_adapter *priv, struct sk_buff *skb, int method)
 	if ((method <= NAT25_MIN) || (method >= NAT25_MAX))
 		return -1;
 
-	protocol = *((__be16 *)(skb->data + 2 * ETH_ALEN));
+	protocol = *((unsigned short *)(skb->data + 2 * ETH_ALEN));
 
 	/*---------------------------------------------------*/
 	/*                 Handle IP frame                  */
@@ -783,6 +814,7 @@ int nat25_db_handle(_adapter *priv, struct sk_buff *skb, int method)
 						/* forward unknow IP packet to upper TCP/IP */
 						RTW_INFO("NAT25: Replace DA with BR's MAC\n");
 						if ((*(u32 *)priv->br_mac) == 0 && (*(u16 *)(priv->br_mac + 4)) == 0) {
+							void netdev_br_init(struct net_device *netdev);
 							printk("Re-init netdev_br_init() due to br_mac==0!\n");
 							netdev_br_init(priv->pnetdev);
 						}
@@ -1084,7 +1116,7 @@ int nat25_db_handle(_adapter *priv, struct sk_buff *skb, int method)
 	else if ((protocol == __constant_htons(ETH_P_PPP_DISC)) ||
 		 (protocol == __constant_htons(ETH_P_PPP_SES))) {
 		struct pppoe_hdr *ph = (struct pppoe_hdr *)(skb->data + ETH_HLEN);
-		__be16 *pMagic;
+		unsigned short *pMagic;
 
 		switch (method) {
 		case NAT25_CHECK:
@@ -1123,7 +1155,7 @@ int nat25_db_handle(_adapter *priv, struct sk_buff *skb, int method)
 						tag->tag_len = htons(MAGIC_CODE_LEN + RTL_RELAY_TAG_LEN + old_tag_len);
 
 						/* insert the magic_code+client mac in relay tag */
-						pMagic = (__be16 *)tag->tag_data;
+						pMagic = (unsigned short *)tag->tag_data;
 						*pMagic = htons(MAGIC_CODE);
 						memcpy(tag->tag_data + MAGIC_CODE_LEN, skb->data + ETH_ALEN, ETH_ALEN);
 
@@ -1172,7 +1204,7 @@ int nat25_db_handle(_adapter *priv, struct sk_buff *skb, int method)
 					int offset = 0;
 
 					ptr = __nat25_find_pppoe_tag(ph, ntohs(PTT_RELAY_SID));
-					if (!ptr) {
+					if (ptr == 0) {
 						DEBUG_ERR("Fail to find PTT_RELAY_SID in FADO!\n");
 						return -1;
 					}
@@ -1186,7 +1218,7 @@ int nat25_db_handle(_adapter *priv, struct sk_buff *skb, int method)
 						return -1;
 					}
 
-					pMagic = (__be16 *)tag->tag_data;
+					pMagic = (unsigned short *)tag->tag_data;
 					if (ntohs(*pMagic) != MAGIC_CODE) {
 						DEBUG_ERR("Can't find MAGIC_CODE in %s packet!\n",
 							(ph->code == PADO_CODE ? "PADO" : "PADS"));
@@ -1329,6 +1361,7 @@ int nat25_db_handle(_adapter *priv, struct sk_buff *skb, int method)
 				iph->daddr.s6_addr16[0], iph->daddr.s6_addr16[1], iph->daddr.s6_addr16[2], iph->daddr.s6_addr16[3],
 				iph->daddr.s6_addr16[4], iph->daddr.s6_addr16[5], iph->daddr.s6_addr16[6], iph->daddr.s6_addr16[7]);
 
+
 			__nat25_generate_ipv6_network_addr(networkAddr, (unsigned int *)&iph->daddr);
 			if (!__nat25_db_network_lookup_and_replace(priv, skb, networkAddr)) {
 #ifdef SUPPORT_RX_UNI2MCAST
@@ -1346,6 +1379,7 @@ int nat25_db_handle(_adapter *priv, struct sk_buff *skb, int method)
 
 	return -1;
 }
+
 
 int nat25_handle_frame(_adapter *priv, struct sk_buff *skb)
 {
@@ -1371,7 +1405,7 @@ int nat25_handle_frame(_adapter *priv, struct sk_buff *skb)
 		int is_vlan_tag = 0, i, retval = 0;
 		unsigned short vlan_hdr = 0;
 
-		if (*((__be16 *)(skb->data + ETH_ALEN * 2)) == __constant_htons(ETH_P_8021Q)) {
+		if (*((unsigned short *)(skb->data + ETH_ALEN * 2)) == __constant_htons(ETH_P_8021Q)) {
 			is_vlan_tag = 1;
 			vlan_hdr = *((unsigned short *)(skb->data + ETH_ALEN * 2 + 2));
 			for (i = 0; i < 6; i++)
@@ -1388,7 +1422,7 @@ int nat25_handle_frame(_adapter *priv, struct sk_buff *skb)
 			 *	corresponding network protocol is NOT support.
 			 */
 			if (!priv->ethBrExtInfo.nat25sc_disable &&
-			    (*((__be16 *)(skb->data + ETH_ALEN * 2)) == __constant_htons(ETH_P_IP)) &&
+			    (*((unsigned short *)(skb->data + ETH_ALEN * 2)) == __constant_htons(ETH_P_IP)) &&
 			    !memcmp(priv->scdb_ip, skb->data + ETH_HLEN + 16, 4)) {
 				memcpy(skb->data, priv->scdb_mac, ETH_ALEN);
 
@@ -1425,6 +1459,35 @@ int nat25_handle_frame(_adapter *priv, struct sk_buff *skb)
 	return 0;
 }
 
+#if 0
+void mac_clone(_adapter *priv, unsigned char *addr)
+{
+	struct sockaddr sa;
+
+	memcpy(sa.sa_data, addr, ETH_ALEN);
+	RTW_INFO("MAC Clone: Addr=%02x%02x%02x%02x%02x%02x\n",
+		 addr[0], addr[1], addr[2], addr[3], addr[4], addr[5]);
+	rtl8192cd_set_hwaddr(priv->dev, &sa);
+}
+
+
+int mac_clone_handle_frame(_adapter *priv, struct sk_buff *skb)
+{
+	if (priv->ethBrExtInfo.macclone_enable && !priv->macclone_completed) {
+		if (!(skb->data[ETH_ALEN] & 1)) {	/* check any other particular MAC add */
+			if (memcmp(skb->data + ETH_ALEN, GET_MY_HWADDR(priv), ETH_ALEN) &&
+			    ((priv->dev->br_port) &&
+			     memcmp(skb->data + ETH_ALEN, priv->br_mac, ETH_ALEN))) {
+				mac_clone(priv, skb->data + ETH_ALEN);
+				priv->macclone_completed = 1;
+			}
+		}
+	}
+
+	return 0;
+}
+#endif /* 0 */
+
 #define SERVER_PORT			67
 #define CLIENT_PORT			68
 #define DHCP_MAGIC			0x63825363
@@ -1455,7 +1518,7 @@ void dhcp_flag_bcast(_adapter *priv, struct sk_buff *skb)
 		return;
 
 	if (!priv->ethBrExtInfo.dhcp_bcst_disable) {
-		__be16 protocol = *((__be16 *)(skb->data + 2 * ETH_ALEN));
+		unsigned short protocol = *((unsigned short *)(skb->data + 2 * ETH_ALEN));
 
 		if (protocol == __constant_htons(ETH_P_IP)) { /* IP */
 			struct iphdr *iph = (struct iphdr *)(skb->data + ETH_HLEN);
@@ -1488,6 +1551,7 @@ void dhcp_flag_bcast(_adapter *priv, struct sk_buff *skb)
 		}
 	}
 }
+
 
 void *scdb_findEntry(_adapter *priv, unsigned char *macAddr,
 		     unsigned char *ipAddr)

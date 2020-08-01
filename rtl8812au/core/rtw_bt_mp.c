@@ -1,6 +1,6 @@
 /******************************************************************************
  *
- * Copyright(c) 2007 - 2011 Realtek Corporation. All rights reserved.
+ * Copyright(c) 2007 - 2017 Realtek Corporation.
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of version 2 of the GNU General Public License as
@@ -11,12 +11,8 @@
  * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
  * more details.
  *
- * You should have received a copy of the GNU General Public License along with
- * this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110, USA
- *
- *
- ******************************************************************************/
+ *****************************************************************************/
+
 
 #include <drv_types.h>
 #include <rtw_bt_mp.h>
@@ -30,6 +26,7 @@ void MPh2c_timeout_handle(void *FunctionContext)
 {
 	PADAPTER pAdapter;
 	PMPT_CONTEXT pMptCtx;
+
 
 	RTW_INFO("[MPT], MPh2c_timeout_handle\n");
 
@@ -154,6 +151,8 @@ mptbt_SendH2c(
 	return h2cStatus;
 }
 
+
+
 BT_CTRL_STATUS
 mptbt_CheckBtRspStatus(
 	PADAPTER			Adapter,
@@ -187,6 +186,8 @@ mptbt_CheckBtRspStatus(
 
 	return retStatus;
 }
+
+
 
 BT_CTRL_STATUS
 mptbt_BtFwOpCodeProcess(
@@ -243,6 +244,9 @@ mptbt_BtFwOpCodeProcess(
 
 	return retStatus;
 }
+
+
+
 
 u2Byte
 mptbt_BtReady(
@@ -450,7 +454,8 @@ mptbt_BtSetMode(
 	return paraLen;
 }
 
-void
+
+VOID
 MPTBT_FwC2hBtMpCtrl(
 	PADAPTER	Adapter,
 	pu1Byte	tmpBuf,
@@ -461,7 +466,7 @@ MPTBT_FwC2hBtMpCtrl(
 	PMPT_CONTEXT	pMptCtx = &(Adapter->mppriv.mpt_ctx);
 	PBT_EXT_C2H pExtC2h = (PBT_EXT_C2H)tmpBuf;
 
-	if (Adapter->bBTFWReady == _FALSE || Adapter->registrypriv.mp_mode == 0) {
+	if (GET_HAL_DATA(Adapter)->bBTFWReady == _FALSE || Adapter->registrypriv.mp_mode == 0) {
 		/* RTW_INFO("Ignore C2H BT MP Info since not in MP mode\n"); */
 		return;
 	}
@@ -480,6 +485,11 @@ MPTBT_FwC2hBtMpCtrl(
 	switch (pExtC2h->extendId) {
 	case EXT_C2H_WIFI_FW_ACTIVE_RSP:
 		RTW_INFO("[MPT], EXT_C2H_WIFI_FW_ACTIVE_RSP\n");
+#if 0
+		RTW_INFO("[MPT], pExtC2h->buf hex:\n");
+		for (i = 0; i < (length - 3); i++)
+			RTW_INFO(" 0x%x ", pExtC2h->buf[i]);
+#endif
 		if ((_FALSE == pMptCtx->bMPh2c_timeout)
 		    && (_FALSE == pMptCtx->MptH2cRspEvent)) {
 			pMptCtx->MptH2cRspEvent = _TRUE;
@@ -510,7 +520,10 @@ MPTBT_FwC2hBtMpCtrl(
 		break;
 	}
 
+
+
 }
+
 
 u2Byte
 mptbt_BtGetGeneral(
@@ -814,6 +827,8 @@ mptbt_BtGetGeneral(
 	return paraLen;
 }
 
+
+
 u2Byte
 mptbt_BtSetGeneral(
 	IN	PADAPTER		Adapter,
@@ -1099,6 +1114,8 @@ mptbt_BtSetGeneral(
 	return paraLen;
 }
 
+
+
 u2Byte
 mptbt_BtSetTxRxPars(
 	IN	PADAPTER		Adapter,
@@ -1297,6 +1314,7 @@ mptbt_BtSetTxRxPars(
 		return paraLen;
 	}
 
+
 	/* fill h2c parameters */
 	btOpcode = BT_LO_OP_SET_CHNL_TX_GAIN;
 	if ((pTxRxPars->txrxChannel > 78) ||
@@ -1375,6 +1393,8 @@ mptbt_BtSetTxRxPars(
 	return paraLen;
 }
 
+
+
 u2Byte
 mptbt_BtTestCtrl(
 	IN	PADAPTER		Adapter,
@@ -1439,6 +1459,7 @@ mptbt_BtTestCtrl(
 	return paraLen;
 }
 
+
 u2Byte
 mptbt_TestBT(
 	IN	PADAPTER		Adapter,
@@ -1466,6 +1487,7 @@ mptbt_TestBT(
 	/*	retStatus = mptbt_BtFwOpCodeProcess(Adapter, btOpcode, btOpcodeVer, &h2cParaBuf[0], h2cParaLen); */
 	retStatus = mptbt_BtFwOpCodeProcess(Adapter, btOpcode, btOpcodeVer, h2cParaBuf, h2cParaLen);
 
+
 	/* 3. construct respond status code and data. */
 	if (BT_STATUS_BT_OP_SUCCESS != retStatus) {
 		pBtRsp->status = ((btOpcode << 8) | retStatus);
@@ -1477,10 +1499,10 @@ mptbt_TestBT(
 	return paraLen;
 }
 
-void
+VOID
 mptbt_BtControlProcess(
 	PADAPTER	Adapter,
-	void *		pInBuf
+	PVOID		pInBuf
 )
 {
 	u1Byte			H2C_Parameter[6] = {0};
@@ -1489,6 +1511,7 @@ mptbt_BtControlProcess(
 	PBT_REQ_CMD	pBtReq = (PBT_REQ_CMD)pInBuf;
 	PBT_RSP_CMD	pBtRsp;
 	u1Byte			i;
+
 
 	RTW_INFO("[MPT], mptbt_BtControlProcess()=========>\n");
 

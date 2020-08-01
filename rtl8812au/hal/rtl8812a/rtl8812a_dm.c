@@ -1,6 +1,6 @@
 /******************************************************************************
  *
- * Copyright(c) 2007 - 2011 Realtek Corporation. All rights reserved.
+ * Copyright(c) 2007 - 2017 Realtek Corporation.
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of version 2 of the GNU General Public License as
@@ -11,12 +11,7 @@
  * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
  * more details.
  *
- * You should have received a copy of the GNU General Public License along with
- * this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110, USA
- *
- *
- ******************************************************************************/
+ *****************************************************************************/
 /* ************************************************************
  * Description:
  *
@@ -36,20 +31,30 @@
  * Global var
  * ************************************************************ */
 
-
-static void
+static VOID
 dm_CheckProtection(
 	IN	PADAPTER	Adapter
 )
 {
+#if 0
+	PMGNT_INFO		pMgntInfo = &(Adapter->MgntInfo);
+	u1Byte			CurRate, RateThreshold;
+
+	if (pMgntInfo->pHTInfo->bCurBW40MHz)
+		RateThreshold = MGN_MCS1;
+	else
+		RateThreshold = MGN_MCS3;
+
+	if (Adapter->TxStats.CurrentInitTxRate <= RateThreshold) {
+		pMgntInfo->bDmDisableProtect = TRUE;
+		DbgPrint("Forced disable protect: %x\n", Adapter->TxStats.CurrentInitTxRate);
+	} else {
+		pMgntInfo->bDmDisableProtect = FALSE;
+		DbgPrint("Enable protect: %x\n", Adapter->TxStats.CurrentInitTxRate);
+	}
+#endif
 }
 
-static void
-dm_CheckStatistics(
-	IN	PADAPTER	Adapter
-)
-{
-}
 #ifdef CONFIG_SUPPORT_HW_WPS_PBC
 static void dm_CheckPbcGPIO(_adapter *padapter)
 {
@@ -124,7 +129,7 @@ static void dm_CheckPbcGPIO(_adapter *padapter)
  *
  *	Created by Roger, 2010.03.05.
  *   */
-void
+VOID
 dm_InterruptMigration(
 	IN	PADAPTER	Adapter
 )
@@ -134,7 +139,6 @@ dm_InterruptMigration(
 	BOOLEAN			bCurrentIntMt, bCurrentACIntDisable;
 	BOOLEAN			IntMtToSet = _FALSE;
 	BOOLEAN			ACIntToSet = _FALSE;
-
 
 	/* Retrieve current interrupt migration and Tx four ACs IMR settings first. */
 	bCurrentIntMt = pHalData->bInterruptMigration;
@@ -172,6 +176,24 @@ dm_InterruptMigration(
 		}
 	}
 
+#if 0
+	if (bCurrentACIntDisable != ACIntToSet) {
+		RTW_INFO("%s(): Update AC interrrupt(%d)\n", __FUNCTION__, ACIntToSet);
+		if (ACIntToSet) { /*  Disable four ACs interrupts. */
+			/* */
+			/*  <Roger_Notes> Disable VO, VI, BE and BK four AC interrupts to gain more efficient CPU utilization. */
+			/*  When extremely highly Rx OK occurs, we will disable Tx interrupts. */
+			/*  2010.03.05. */
+			/* */
+			UpdateInterruptMask8192CE(Adapter, 0, RT_AC_INT_MASKS);
+			pHalData->bDisableTxInt = ACIntToSet;
+		} else { /*  Enable four ACs interrupts. */
+			UpdateInterruptMask8192CE(Adapter, RT_AC_INT_MASKS, 0);
+			pHalData->bDisableTxInt = ACIntToSet;
+		}
+	}
+#endif
+
 }
 
 #endif
@@ -200,8 +222,7 @@ dm_InitGPIOSetting(
 static void Init_ODM_ComInfo_8812(PADAPTER	Adapter)
 {
 	PHAL_DATA_TYPE	pHalData = GET_HAL_DATA(Adapter);
-	struct PHY_DM_STRUCT		*pDM_Odm = &(pHalData->odmpriv);
-	u32 SupportAbility = 0;
+	struct dm_struct		*pDM_Odm = &(pHalData->odmpriv);
 	u8	cut_ver, fab_ver;
 
 	Init_ODM_ComInfo(Adapter);
@@ -222,60 +243,6 @@ static void Init_ODM_ComInfo_8812(PADAPTER	Adapter)
 
 	odm_cmn_info_init(pDM_Odm, ODM_CMNINFO_FAB_VER, fab_ver);
 	odm_cmn_info_init(pDM_Odm, ODM_CMNINFO_CUT_VER, cut_ver);
-
-#ifdef CONFIG_DISABLE_ODM
-	SupportAbility = 0;
-#else
-	SupportAbility =	ODM_RF_CALIBRATION	|
-				ODM_RF_TX_PWR_TRACK
-				;
-#endif
-
-	odm_cmn_info_update(pDM_Odm, ODM_CMNINFO_ABILITY, SupportAbility);
-
-}
-static void Update_ODM_ComInfo_8812(PADAPTER	Adapter)
-{
-	PHAL_DATA_TYPE	pHalData = GET_HAL_DATA(Adapter);
-	struct PHY_DM_STRUCT		*pDM_Odm = &(pHalData->odmpriv);
-	u32 SupportAbility = 0;
-
-	SupportAbility = 0
-			 | ODM_BB_DIG
-			 | ODM_BB_RA_MASK
-			 | ODM_BB_FA_CNT
-			 | ODM_BB_RSSI_MONITOR
-			 | ODM_BB_CFO_TRACKING
-			 | ODM_RF_TX_PWR_TRACK
-			 | ODM_MAC_EDCA_TURBO
-			 | ODM_BB_NHM_CNT
-			 /*		| ODM_BB_PWR_TRAIN */
-			 ;
-
-	if (rtw_odm_adaptivity_needed(Adapter) == _TRUE) {
-		rtw_odm_adaptivity_config_msg(RTW_DBGDUMP, Adapter);
-		SupportAbility |= ODM_BB_ADAPTIVITY;
-	}
-
-#ifdef CONFIG_ANTENNA_DIVERSITY
-	if (pHalData->AntDivCfg)
-		SupportAbility |= ODM_BB_ANT_DIV;
-#endif
-
-#if (MP_DRIVER == 1)
-	if (Adapter->registrypriv.mp_mode == 1) {
-		SupportAbility = 0
-				 | ODM_RF_CALIBRATION
-				 | ODM_RF_TX_PWR_TRACK
-				 ;
-	}
-#endif/* (MP_DRIVER==1) */
-
-#ifdef CONFIG_DISABLE_ODM
-	SupportAbility = 0;
-#endif/* CONFIG_DISABLE_ODM */
-
-	odm_cmn_info_update(pDM_Odm, ODM_CMNINFO_ABILITY, SupportAbility);
 }
 
 void
@@ -284,40 +251,33 @@ rtl8812_InitHalDm(
 )
 {
 	PHAL_DATA_TYPE	pHalData = GET_HAL_DATA(Adapter);
-	struct PHY_DM_STRUCT		*pDM_Odm = &(pHalData->odmpriv);
-	u8	i;
+	struct dm_struct		*pDM_Odm = &(pHalData->odmpriv);
 
 #ifdef CONFIG_USB_HCI
 	dm_InitGPIOSetting(Adapter);
 #endif
-
-	pHalData->DM_Type = dm_type_by_driver;
-
-	Update_ODM_ComInfo_8812(Adapter);
-	odm_dm_init(pDM_Odm);
-
+	rtw_phydm_init(Adapter);
 	/* Adapter->fix_rate = 0xFF; */
-
 }
 
-
-void
+VOID
 rtl8812_HalDmWatchDog(
 	IN	PADAPTER	Adapter
 )
 {
 	BOOLEAN		bFwCurrentInPSMode = _FALSE;
-	BOOLEAN		bFwPSAwake = _TRUE;
+	u8 bFwPSAwake = _TRUE;
 	PHAL_DATA_TYPE	pHalData = GET_HAL_DATA(Adapter);
-	struct PHY_DM_STRUCT		*pDM_Odm = &(pHalData->odmpriv);
-
+	struct dm_struct		*pDM_Odm = &(pHalData->odmpriv);
+	struct pwrctrl_priv *pwrpriv = adapter_to_pwrctl(Adapter);
+	u8 in_lps = _FALSE;
 
 	if (!rtw_is_hw_init_completed(Adapter))
 		goto skip_dm;
 
 #ifdef CONFIG_LPS
-	bFwCurrentInPSMode = adapter_to_pwrctl(Adapter)->bFwCurrentInPSMode;
-	rtw_hal_get_hwreg(Adapter, HW_VAR_FWLPS_RF_ON, (u8 *)(&bFwPSAwake));
+	bFwCurrentInPSMode = pwrpriv->bFwCurrentInPSMode;
+	rtw_hal_get_hwreg(Adapter, HW_VAR_FWLPS_RF_ON, &bFwPSAwake);
 #endif
 
 #ifdef CONFIG_P2P_PS
@@ -329,10 +289,7 @@ rtl8812_HalDmWatchDog(
 
 	if ((rtw_is_hw_init_completed(Adapter))
 	    && ((!bFwCurrentInPSMode) && bFwPSAwake)) {
-		/*  */
-		/* Calculate Tx/Rx statistics. */
-		/*  */
-		dm_CheckStatistics(Adapter);
+
 		rtw_hal_check_rxfifo_full(Adapter);
 		/*  */
 		/* Dynamically switch RTS/CTS protection. */
@@ -350,33 +307,15 @@ rtl8812_HalDmWatchDog(
 
 	}
 
-	/* ODM */
-	if (rtw_is_hw_init_completed(Adapter)) {
-		u8	bLinked = _FALSE;
-		u8	bsta_state = _FALSE;
-		u8	bBtDisabled = _TRUE;
-
 #ifdef CONFIG_DISABLE_ODM
-		pHalData->odmpriv.support_ability = 0;
+	goto skip_dm;
+#endif
+#ifdef CONFIG_LPS
+	if (pwrpriv->bLeisurePs && bFwCurrentInPSMode && pwrpriv->pwr_mode != PS_MODE_ACTIVE)
+		in_lps = _TRUE;
 #endif
 
-		if (rtw_mi_check_status(Adapter, MI_ASSOC)) {
-			bLinked = _TRUE;
-			if (rtw_mi_check_status(Adapter, MI_STA_LINKED))
-				bsta_state = _TRUE;
-		}
-
-		odm_cmn_info_update(&pHalData->odmpriv , ODM_CMNINFO_LINK, bLinked);
-		odm_cmn_info_update(&pHalData->odmpriv , ODM_CMNINFO_STATION_STATE, bsta_state);
-
-#ifdef CONFIG_BT_COEXIST
-		bBtDisabled = rtw_btcoex_IsBtDisabled(Adapter);
-#endif /* CONFIG_BT_COEXIST */
-		odm_cmn_info_update(&pHalData->odmpriv, ODM_CMNINFO_BT_ENABLED, ((bBtDisabled == _TRUE) ? _FALSE : _TRUE));
-
-		odm_dm_watchdog(&pHalData->odmpriv);
-
-	}
+	rtw_phydm_watchdog(Adapter, in_lps);
 
 skip_dm:
 
@@ -391,7 +330,7 @@ skip_dm:
 void rtl8812_init_dm_priv(IN PADAPTER Adapter)
 {
 	PHAL_DATA_TYPE	pHalData = GET_HAL_DATA(Adapter);
-	struct PHY_DM_STRUCT		*podmpriv = &pHalData->odmpriv;
+	struct dm_struct		*podmpriv = &pHalData->odmpriv;
 
 	/* _rtw_spinlock_init(&(pHalData->odm_stainfo_lock)); */
 
@@ -401,19 +340,21 @@ void rtl8812_init_dm_priv(IN PADAPTER Adapter)
 	if (pHalData->EEPROMBluetoothCoexist == _FALSE)
 	#endif
 	{
-		pHalData->RegIQKFWOffload = 1;
-		rtw_sctx_init(&pHalData->iqk_sctx, 0);
+		if (IS_HARDWARE_TYPE_8821(Adapter))
+			pHalData->RegIQKFWOffload = 1;
 	}
 #endif
 
 	Init_ODM_ComInfo_8812(Adapter);
 	odm_init_all_timers(podmpriv);
+
+	pHalData->CurrentTxPwrIdx = 20;
 }
 
 void rtl8812_deinit_dm_priv(IN PADAPTER Adapter)
 {
 	PHAL_DATA_TYPE	pHalData = GET_HAL_DATA(Adapter);
-	struct PHY_DM_STRUCT		*podmpriv = &pHalData->odmpriv;
+	struct dm_struct		*podmpriv = &pHalData->odmpriv;
 	/* _rtw_spinlock_free(&pHalData->odm_stainfo_lock); */
 	odm_cancel_all_timers(podmpriv);
 }

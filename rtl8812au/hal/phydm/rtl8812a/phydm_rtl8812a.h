@@ -1,6 +1,6 @@
 /******************************************************************************
  *
- * Copyright(c) 2007 - 2011 Realtek Corporation. All rights reserved.
+ * Copyright(c) 2007 - 2017 Realtek Corporation.
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of version 2 of the GNU General Public License as
@@ -11,36 +11,17 @@
  * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
  * more details.
  *
- * You should have received a copy of the GNU General Public License along with
- * this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110, USA
- *
- *
- ******************************************************************************/
+ *****************************************************************************/
 
-#ifndef	__ODM_RTL8812A_H__
+#ifndef __ODM_RTL8812A_H__
 #define __ODM_RTL8812A_H__
-#if (defined(CONFIG_PATH_DIVERSITY))
 
-void
-odm_path_statistics_8812a(
-	struct PHY_DM_STRUCT		*p_dm_odm,
-	u32			mac_id,
-	u32			RSSI_A,
-	u32			RSSI_B
-);
+s8 phydm_cck_rssi_8812a(struct dm_struct *dm, u16 lna_idx, u8 vga_idx);
 
-void
-odm_path_diversity_init_8812a(struct PHY_DM_STRUCT	*p_dm_odm);
-
-void
-odm_path_diversity_8812a(struct PHY_DM_STRUCT	*p_dm_odm);
-
-void
-odm_set_tx_path_by_tx_info_8812a(
-	struct PHY_DM_STRUCT		*p_dm_odm,
-	u8			*p_desc,
-	u8			mac_id
-);
+#ifdef DYN_ANT_WEIGHTING_SUPPORT
+void phydm_dynamic_ant_weighting_8812a(void *dm_void);
 #endif
+
+void phydm_hwsetting_8812a(struct dm_struct *dm);
+
 #endif

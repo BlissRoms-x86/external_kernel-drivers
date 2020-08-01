@@ -1,6 +1,6 @@
 /******************************************************************************
  *
- * Copyright(c) 2007 - 2011 Realtek Corporation. All rights reserved.
+ * Copyright(c) 2007 - 2017 Realtek Corporation.
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of version 2 of the GNU General Public License as
@@ -11,12 +11,7 @@
  * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
  * more details.
  *
- * You should have received a copy of the GNU General Public License along with
- * this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110, USA
- *
- *
- ******************************************************************************/
+ *****************************************************************************/
 #define _RTW_EEPROM_C_
 
 #include <drv_conf.h>
@@ -28,6 +23,7 @@ void up_clk(_adapter	*padapter,	 u16 *x)
 	*x = *x | _EESK;
 	rtw_write8(padapter, EE_9346CR, (u8)*x);
 	rtw_udelay_os(CLOCK_RATE);
+
 
 }
 
@@ -200,6 +196,7 @@ void eeprom_write16(_adapter *padapter, u16 reg, u16 data)
  *		return;
  *	} */
 
+
 	standby(padapter);
 
 	/* write the new word to the EEPROM */
@@ -286,7 +283,11 @@ out:
 #endif
 	return data;
 
+
 }
+
+
+
 
 /* From even offset */
 void eeprom_read_sz(_adapter *padapter, u16 reg, u8 *data, u32 sz)
@@ -313,6 +314,7 @@ void eeprom_read_sz(_adapter *padapter, u16 reg, u8 *data, u32 sz)
 	shift_out_bits(padapter, EEPROM_READ_OPCODE, 3);
 	shift_out_bits(padapter, reg, padapter->EepromAddressSize);
 
+
 	for (i = 0; i < sz; i += 2) {
 		data16 = shift_in_bits(padapter);
 		data[i] = data16 & 0xff;
@@ -323,6 +325,7 @@ void eeprom_read_sz(_adapter *padapter, u16 reg, u8 *data, u32 sz)
 out:
 	return;
 }
+
 
 /* addr_off : address offset of the entry in eeprom (not the tuple number of eeprom (reg); that is addr_off !=reg) */
 u8 eeprom_read(_adapter *padapter, u32 addr_off, u8 sz, u8 *rbuf)
@@ -356,7 +359,11 @@ u8 eeprom_read(_adapter *padapter, u32 addr_off, u8 sz, u8 *rbuf)
 	return _TRUE;
 }
 
-void read_eeprom_content(_adapter	*padapter)
+
+
+VOID read_eeprom_content(_adapter	*padapter)
 {
+
+
 
 }

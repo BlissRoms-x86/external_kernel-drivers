@@ -1,6 +1,6 @@
 /******************************************************************************
  *
- * Copyright(c) 2007 - 2011 Realtek Corporation. All rights reserved.
+ * Copyright(c) 2007 - 2017 Realtek Corporation.
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of version 2 of the GNU General Public License as
@@ -11,23 +11,23 @@
  * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
  * more details.
  *
- * You should have received a copy of the GNU General Public License along with
- * this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110, USA
- *
- *
- ******************************************************************************/
+ *****************************************************************************/
 
 #ifndef _RTW_IO_H_
 #define _RTW_IO_H_
 
 #define NUM_IOREQ		8
 
-#define MAX_PROT_SZ	(64-16)
+#ifdef PLATFORM_WINDOWS
+	#define MAX_PROT_SZ	64
+#endif
+#ifdef PLATFORM_LINUX
+	#define MAX_PROT_SZ	(64-16)
+#endif
 
-#define _IOREADY		0
-#define _IO_WAIT_COMPLETE	1
-#define _IO_WAIT_RSP		2
+#define _IOREADY			0
+#define _IO_WAIT_COMPLETE   1
+#define _IO_WAIT_RSP        2
 
 /* IO COMMAND TYPE */
 #define _IOSZ_MASK_		(0x7F)
@@ -95,13 +95,13 @@ struct _io_ops {
 	u32(*_read32)(struct intf_hdl *pintfhdl, u32 addr);
 
 	int (*_write8)(struct intf_hdl *pintfhdl, u32 addr, u8 val);
-	int (*_write16)(struct intf_hdl *pintfhdl, u32 addr, __le16 val);
-	int (*_write32)(struct intf_hdl *pintfhdl, u32 addr, __le32 val);
+	int (*_write16)(struct intf_hdl *pintfhdl, u32 addr, u16 val);
+	int (*_write32)(struct intf_hdl *pintfhdl, u32 addr, u32 val);
 	int (*_writeN)(struct intf_hdl *pintfhdl, u32 addr, u32 length, u8 *pdata);
 
 	int (*_write8_async)(struct intf_hdl *pintfhdl, u32 addr, u8 val);
-	int (*_write16_async)(struct intf_hdl *pintfhdl, u32 addr, __le16 val);
-	int (*_write32_async)(struct intf_hdl *pintfhdl, u32 addr, __le32 val);
+	int (*_write16_async)(struct intf_hdl *pintfhdl, u32 addr, u16 val);
+	int (*_write32_async)(struct intf_hdl *pintfhdl, u32 addr, u32 val);
 
 	void (*_read_mem)(struct intf_hdl *pintfhdl, u32 addr, u32 cnt, u8 *pmem);
 	void (*_write_mem)(struct intf_hdl *pintfhdl, u32 addr, u32 cnt, u8 *pmem);
@@ -141,20 +141,58 @@ struct io_req {
 	u8	*pbuf;
 	_sema	sema;
 
+#ifdef PLATFORM_OS_CE
+#ifdef CONFIG_USB_HCI
+	/* URB handler for rtw_write_mem */
+	USB_TRANSFER usb_transfer_write_mem;
+#endif
+#endif
+
 	void (*_async_io_callback)(_adapter *padater, struct io_req *pio_req, u8 *cnxt);
 	u8 *cnxt;
+
+#ifdef PLATFORM_OS_XP
+	PMDL pmdl;
+	PIRP  pirp;
+
+#ifdef CONFIG_SDIO_HCI
+	PSDBUS_REQUEST_PACKET sdrp;
+#endif
+
+#endif
+
+
 };
 
 struct	intf_hdl {
+
+#if 0
+	u32	intf_option;
+	u32	bus_status;
+	u32	do_flush;
+	u8	*adapter;
+	u8	*intf_dev;
+	struct intf_priv	*pintfpriv;
+	u8	cnt;
+	void (*intf_hdl_init)(u8 *priv);
+	void (*intf_hdl_unload)(u8 *priv);
+	void (*intf_hdl_open)(u8 *priv);
+	void (*intf_hdl_close)(u8 *priv);
+	struct	_io_ops	io_ops;
+	/* u8 intf_status;//moved to struct intf_priv */
+	u16 len;
+	u16 done_len;
+#endif
 	_adapter *padapter;
 	struct dvobj_priv *pintf_dev;/*	pointer to &(padapter->dvobjpriv); */
 
 	struct _io_ops	io_ops;
+
 };
 
 struct reg_protocol_rd {
 
-#ifdef __LITTLE_ENDIAN
+#ifdef CONFIG_LITTLE_ENDIAN
 
 	/* DW1 */
 	u32		NumOfTrans:4;
@@ -212,7 +250,7 @@ struct reg_protocol_rd {
 struct reg_protocol_wt {
 
 
-#ifdef __LITTLE_ENDIAN
+#ifdef CONFIG_LITTLE_ENDIAN
 
 	/* DW1 */
 	u32		NumOfTrans:4;
@@ -357,10 +395,12 @@ u32 _rtw_write_port_and_wait(_adapter *adapter, u32 addr, u32 cnt, u8 *pmem, int
 extern void _rtw_write_port_cancel(_adapter *adapter);
 
 #ifdef DBG_IO
-bool match_read_sniff_ranges(u32 addr, u16 len);
-bool match_write_sniff_ranges(u32 addr, u16 len);
-bool match_rf_read_sniff_ranges(u8 path, u32 addr, u32 mask);
-bool match_rf_write_sniff_ranges(u8 path, u32 addr, u32 mask);
+struct rtw_io_sniff_ent;
+const char *rtw_io_sniff_ent_get_tag(const struct rtw_io_sniff_ent *ent);
+const struct rtw_io_sniff_ent *match_read_sniff(_adapter *adapter, u32 addr, u16 len, u32 val);
+const struct rtw_io_sniff_ent *match_write_sniff(_adapter *adapter, u32 addr, u16 len, u32 val);
+bool match_rf_read_sniff_ranges(_adapter *adapter, u8 path, u32 addr, u32 mask);
+bool match_rf_write_sniff_ranges(_adapter *adapter, u8 path, u32 addr, u32 mask);
 
 extern u8 dbg_rtw_read8(_adapter *adapter, u32 addr, const char *caller, const int line);
 extern u16 dbg_rtw_read16(_adapter *adapter, u32 addr, const char *caller, const int line);
@@ -417,10 +457,6 @@ int dbg_rtw_sd_iwrite32(_adapter *adapter, u32 addr, u32 val, const char *caller
 #endif /* CONFIG_SDIO_HCI */
 
 #else /* DBG_IO */
-#define match_read_sniff_ranges(addr, len) _FALSE
-#define match_write_sniff_ranges(addr, len) _FALSE
-#define match_rf_read_sniff_ranges(path, addr, mask) _FALSE
-#define match_rf_write_sniff_ranges(path, addr, mask) _FALSE
 #define rtw_read8(adapter, addr) _rtw_read8((adapter), (addr))
 #define rtw_read16(adapter, addr) _rtw_read16((adapter), (addr))
 #define rtw_read32(adapter, addr) _rtw_read32((adapter), (addr))

@@ -1,6 +1,6 @@
 /******************************************************************************
  *
- * Copyright(c) 2007 - 2011 Realtek Corporation. All rights reserved.
+ * Copyright(c) 2007 - 2017 Realtek Corporation.
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of version 2 of the GNU General Public License as
@@ -11,12 +11,7 @@
  * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
  * more details.
  *
- * You should have received a copy of the GNU General Public License along with
- * this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110, USA
- *
- *
- ******************************************************************************/
+ *****************************************************************************/
 
 #ifndef __OSDEP_INTF_H_
 #define __OSDEP_INTF_H_
@@ -47,6 +42,8 @@ struct intf_priv {
 
 	_mutex ioctl_mutex;
 
+
+#ifdef PLATFORM_LINUX
 #ifdef CONFIG_USB_HCI
 	/* when in USB, IO is through interrupt in/out endpoints */
 	struct usb_device	*udev;
@@ -58,7 +55,30 @@ struct intf_priv {
 	u8 bio_irp_timeout;
 	u8 bio_timer_cancel;
 #endif
+#endif
+
+#ifdef PLATFORM_OS_XP
+#ifdef CONFIG_SDIO_HCI
+	/* below is for io_rwmem... */
+	PMDL pmdl;
+	PSDBUS_REQUEST_PACKET  sdrp;
+	PSDBUS_REQUEST_PACKET  recv_sdrp;
+	PSDBUS_REQUEST_PACKET  xmit_sdrp;
+
+	PIRP		piorw_irp;
+
+#endif
+#ifdef CONFIG_USB_HCI
+	PURB	piorw_urb;
+	PIRP		piorw_irp;
+	u8 io_irp_cnt;
+	u8 bio_irp_pending;
+	_sema io_retevt;
+#endif
+#endif
+
 };
+
 
 #ifdef CONFIG_R871X_TEST
 	int rtw_start_pseudo_adhoc(_adapter *padapter);
@@ -82,6 +102,7 @@ void rtw_cancel_all_timer(_adapter *padapter);
 
 uint loadparam(_adapter *adapter);
 
+#ifdef PLATFORM_LINUX
 int rtw_ioctl(struct net_device *dev, struct ifreq *rq, int cmd);
 
 int rtw_init_netdev_name(struct net_device *pnetdev, const char *ifname);
@@ -101,12 +122,24 @@ u16 rtw_recv_select_queue(struct sk_buff *skb);
 
 int rtw_ndev_notifier_register(void);
 void rtw_ndev_notifier_unregister(void);
+void rtw_inetaddr_notifier_register(void);
+void rtw_inetaddr_notifier_unregister(void);
 
 #include "../os_dep/linux/rtw_proc.h"
 
 #ifdef CONFIG_IOCTL_CFG80211
 	#include "../os_dep/linux/ioctl_cfg80211.h"
 #endif /* CONFIG_IOCTL_CFG80211 */
+
+u8 rtw_rtnl_lock_needed(struct dvobj_priv *dvobj);
+void rtw_set_rtnl_lock_holder(struct dvobj_priv *dvobj, _thread_hdl_ thd_hdl);
+
+#endif /* PLATFORM_LINUX */
+
+
+#ifdef PLATFORM_FREEBSD
+extern int rtw_ioctl(struct ifnet *ifp, u_long cmd, caddr_t data);
+#endif
 
 void rtw_ips_dev_unload(_adapter *padapter);
 
@@ -124,9 +157,8 @@ void rtw_drv_free_vir_ifaces(struct dvobj_priv *dvobj);
 #endif
 
 void rtw_ndev_destructor(_nic_hdl ndev);
-
 #ifdef CONFIG_ARP_KEEP_ALIVE
-int	rtw_gw_addr_query(_adapter *padapter);
+int rtw_gw_addr_query(_adapter *padapter);
 #endif
 
 int rtw_suspend_common(_adapter *padapter);
