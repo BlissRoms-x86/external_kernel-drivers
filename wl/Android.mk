@@ -9,6 +9,7 @@
 #
 
 LOCAL_PATH := $(my-dir)
+CUR_LOCAL_PATH := $(call my-dir)
 LOCAL_MODULE := $(notdir $(LOCAL_PATH))
 EXTRA_KERNEL_MODULE_PATH_$(LOCAL_MODULE) := $(LOCAL_PATH)
 
