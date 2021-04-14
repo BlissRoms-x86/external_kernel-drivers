@@ -20,19 +20,22 @@ WL_SRC := $(WL_PATH)/hybrid-v35$(if $(filter x86,$(TARGET_KERNEL_ARCH)),,_64)-no
 WL_LIB := $(WL_PATH)/lib$(if $(filter x86,$(TARGET_KERNEL_ARCH)),32,64)
 
 WL_PATCHES := \
-	wl.patch \
-	002-rdtscl.patch \
-	003-linux47.patch \
-	004-linux48.patch \
-	005-debian-fix-kernel-warnings.patch \
-	006-linux411.patch \
-	007-linux412.patch \
-	008-linux415.patch \
-	009-fix_mac_profile_discrepancy.patch \
-	010-linux510.patch \
-	011-linux560.patch \
-	012-linux590.patch \
-	013-linux5100.patch \
+	broadcom-sta-6.30.223.141-eth-to-wlan.patch \
+	broadcom-sta-6.30.223.141-gcc.patch \
+	broadcom-sta-6.30.223.141-makefile.patch \
+	broadcom-sta-6.30.223.248-r3-Wno-date-time.patch \
+	broadcom-sta-6.30.223.271-r1-linux-3.18.patch \
+	broadcom-sta-6.30.223.271-r2-linux-4.3-v2.patch \
+	broadcom-sta-6.30.223.271-r4-linux-4.7.patch \
+	broadcom-sta-6.30.223.271-r4-linux-4.8.patch \
+	broadcom-wl.linux-4.11.patch \
+	broadcom-wl.linux-4.12.patch \
+	broadcom-wl.linux-4.14.patch \
+	broadcom-wl.linux-4.15.patch \
+	broadcom-wl.linux-5.1.patch \
+	broadcom-wl.linux-5.6.patch \
+	broadcom-wl.linux-5.9.patch \
+	wl.patch 
 
 $(WL_SRC):
 	@echo Downloading $(@F)...
