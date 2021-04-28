@@ -1,3 +1,28 @@
+--- a/src/shared/linux_osl.c
++++ b/src/shared/linux_osl.c
+@@ -1076,11 +1076,21 @@ osl_os_get_image_block(char *buf, int len, void *image)
+ {
+ 	struct file *fp = (struct file *)image;
+ 	int rdlen;
++	loff_t pos;
+ 
+ 	if (!image)
+ 		return 0;
+ 
+-	rdlen = kernel_read(fp, fp->f_pos, buf, len);
++	pos = fp->f_pos;
++	rdlen = kernel_read(fp,
++#if LINUX_VERSION_CODE < KERNEL_VERSION(4, 14, 0)
++			pos,
++#endif
++			buf, len
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 14, 0)
++			,&pos
++#endif
++	);
+ 	if (rdlen > 0)
+ 		fp->f_pos += rdlen;
+ 
 --- a/src/wl/sys/wl_linux.c	2017-07-17 00:11:24.000000000 +0100
 +++ b/src/wl/sys/wl_linux.c	2018-01-27 09:49:47.057799596 +0000
 @@ -93,7 +93,11 @@

@@ -42,3 +42,20 @@ index 211f137..86dd7df 100644
  			bar1_size);
  	wl = wl_attach(pdev->vendor, pdev->device, pci_resource_start(pdev, 0), PCI_BUS, pdev,
  		pdev->irq, bar1_addr, bar1_size);
+@@ -3358,10 +3367,16 @@ wl_proc_write(struct file *filp, const char __user *buff, size_t length, loff_t
+ }
+ 
+ #if LINUX_VERSION_CODE >= KERNEL_VERSION(3, 10, 0)
++#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 6, 0)
+ static const struct file_operations wl_fops = {
+ 	.owner	= THIS_MODULE,
+ 	.read	= wl_proc_read,
+ 	.write	= wl_proc_write,
++#else
++static const struct proc_ops wl_fops = {
++	.proc_read	= wl_proc_read,
++	.proc_write	= wl_proc_write,
++#endif
+ };
+ #endif
+ 
